@@ -59,6 +59,7 @@ class GUI:
         self.window = False
         self.itemlist = ItemList()
         self.itemlist.load(self.settings.params)
+        self.conv_tabname = {'草':'kusa', '巻物':'makimono','腕輪':'udewa','壺':'tubo','杖':'tue'}
 
     # icon用
     def ico_path(self, relative_path):
@@ -196,9 +197,7 @@ class GUI:
         self.window['memo'].update(self.settings.params['memo'])
         self.window['memo_const'].expand(expand_x=True, expand_y=True)
         self.window['memo_const'].update(self.settings.params['memo_const'])
-        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue', 'buki', 'tate']:
-            self.mode = k
-            self.update_table()
+        self.update_table()
         self.mode = 'kusa'
         self.update_monster(1)
         ## 印の反映
@@ -238,40 +237,41 @@ class GUI:
         return target
 
     def update_table(self):
-        data=[]
-        target = self.get_target(self.mode)
-        row_colors = []
-        pre_buy = target[0].buy
-        is_odd = False
-        for i,item in enumerate(target):
-            capacity = ''
-            fontcolor = 'black'
-            buy = f"{item.buy:,}"
-            sell = f"{item.sell:,}"
-            if self.mode in ['tue','tubo']:
-                if item.capa_min == item.capa_max:
-                    capacity = item.capa_max
+        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
+            data=[]
+            target = self.get_target(k)
+            row_colors = []
+            pre_buy = target[0].buy
+            is_odd = False
+            for i,item in enumerate(target):
+                capacity = ''
+                fontcolor = 'black'
+                buy = f"{item.buy:,}"
+                sell = f"{item.sell:,}"
+                if k in ['tue','tubo']:
+                    if item.capa_min == item.capa_max:
+                        capacity = item.capa_max
+                    else:
+                        capacity = f"{item.capa_min}-{item.capa_max}"
+                    buy = f"{item.buy:,} - {item.buy_max:,}"
+                    sell = f"{item.sell:,} - {item.sell_max:,}"
+                data.append([item.name, capacity, buy, sell, item.memo])
+                if item.buy != pre_buy:
+                    pre_buy = item.buy
+                    is_odd = not is_odd
+                if is_odd:
+                    bgcolor = '#ffffb0'
                 else:
-                    capacity = f"{item.capa_min}-{item.capa_max}"
-                buy = f"{item.buy:,} - {item.buy_max:,}"
-                sell = f"{item.sell:,} - {item.sell_max:,}"
-            data.append([item.name, capacity, buy, sell, item.memo])
-            if item.buy != pre_buy:
-                pre_buy = item.buy
-                is_odd = not is_odd
-            if is_odd:
-                bgcolor = '#ffffb0'
-            else:
-                bgcolor = '#b0ffff'
-            if item.get:
-                bgcolor = '#666666'
-            if item.default_get:
-                bgcolor = '#666666'
-            if item.demerit: # 完全なデメリットアイテムは文字を灰色に
-                fontcolor='#888888'
-            row_colors.append((i, fontcolor, bgcolor))
-        self.window[f'table_{self.mode}'].update(data)
-        self.window[f'table_{self.mode}'].update(row_colors=row_colors)
+                    bgcolor = '#b0ffff'
+                if item.get:
+                    bgcolor = '#666666'
+                if item.default_get:
+                    bgcolor = '#666666'
+                if item.demerit: # 完全なデメリットアイテムは文字を灰色に
+                    fontcolor='#888888'
+                row_colors.append((i, fontcolor, bgcolor))
+            self.window[f'table_{k}'].update(data)
+            self.window[f'table_{k}'].update(row_colors=row_colors)
 
         # 統計情報の取得
         self.write_stat_xml()
@@ -354,7 +354,10 @@ class GUI:
         self.gui_main()
         while 1:
             ev, val = self.window.read()
-            print(f"event='{ev}', values={val}, maximized:{self.window.maximized}")
+            for v in val.keys():
+                if 'tg_' in v:
+                    print(f"val[{v}]:{val[v]}")
+            print(f"ev={ev}")
             # アプリ終了時に実行
             if ev in (sg.WIN_CLOSED, '-WINDOW CLOSE ATTEMPTED-', 'btn_close', 'Escape:27'): # 終了処理
                 self.settings.params['lx'] = self.window.current_location()[0]
@@ -373,17 +376,17 @@ class GUI:
                 self.settings.save_settings()
                 break
             elif ev == 'btn_get':
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    for i in val[f'table_{k}']:
-                        self.mode = k
-                        self.mod_target(self.mode, i, True)
+                mode = self.conv_tabname[val['tg_det']]
+                for i in val[f'table_{mode}']:
+                    self.mode = mode
+                    self.mod_target(self.mode, i, True)
                 self.update_table()
                 self.update_info('')
             elif ev == 'btn_lost':
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    for i in val[f'table_{k}']:
-                        self.mode = k
-                        self.mod_target(self.mode, i, False)
+                mode = self.conv_tabname[val['tg_det']]
+                for i in val[f'table_{mode}']:
+                    self.mode = mode
+                    self.mod_target(self.mode, i, False)
                 self.update_table()
                 self.update_info('')
             elif (ev.startswith('bin_')) or (ev.startswith('tin_')):
@@ -394,9 +397,7 @@ class GUI:
                 self.itemlist.reset()
                 self.window['memo'].update('')
                 pre_mode = self.mode
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    self.mode = k
-                    self.update_table()
+                self.update_table()
                 self.mode = pre_mode
                 for k in val.keys():
                     if ('bin_' in k) or ('tin_' in k):
