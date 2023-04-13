@@ -422,17 +422,19 @@ class ItemList:
                 if tmp.get:
                     cnt[7] += 1
         for i,tmp in enumerate(self.makimono):
-            total[1] += 1
-            if tmp.get:
-                cnt[1] += 1
+            if not tmp.default_get:
+                total[1] += 1
+                if tmp.get:
+                    cnt[1] += 1
         for i,tmp in enumerate(self.udewa):
             total[2] += 1
             if tmp.get:
                 cnt[2] += 1
         for i,tmp in enumerate(self.tubo):
-            total[3] += 1
-            if tmp.get:
-                cnt[3] += 1
+            if not tmp.default_get:
+                total[3] += 1
+                if tmp.get:
+                    cnt[3] += 1
         for i,tmp in enumerate(self.tue):
             total[4] += 1
             if tmp.get:
