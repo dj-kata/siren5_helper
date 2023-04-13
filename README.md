@@ -2,6 +2,12 @@
 風来のシレン5向けの識別支援ツールです。  
 Windows(64bit)で動作します。
 
+# 中身
+- siren5_helper.exe: プログラム本体
+- icon.ico: アイコン(一応入れている)
+- stat.html: OBSへの識別情報表示用HTML
+- soubi.html: OBSへの装備印情報表示用HTML
+
 # できること
 ## 各アイテムの識別(値段識別、識別済みアイテムのメモ)
 値段判別時に役に立つ機能を備えています。  
@@ -20,6 +26,11 @@ OBSを使った配信の補助用に、現在の装備についた印をチェ�
 同梱のstat.html、soubi.htmlをOBSのブラウザソースで取り込むことで使えます。
 ![image](https://user-images.githubusercontent.com/61326119/231686063-afe06bc4-f502-4e59-b9ce-1cf1357e6287.png)
 ![image](https://user-images.githubusercontent.com/61326119/231687238-1e016ea8-482c-4497-bd99-928f1f606060.png)
+
+## モンスターテーブルの表示
+原始のモンスターテーブルを表示する機能も搭載している。  
+個人的にフロアは紫、何らかの草を稼げそうなフロアは緑、にぎり系がいるフロアは青、のような色付けをしている。
+![image](https://user-images.githubusercontent.com/61326119/231711025-0346b46a-4446-4b91-80a0-3cf647fb80e1.png)
 
 # 使い方
 1. [Releaseページ](https://github.com/dj-kata/siren5_helper/releases)から最新のsiren5_helper.zipをダウンロードし、好きなフォルダに解凍する
