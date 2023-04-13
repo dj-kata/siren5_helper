@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 from item import ItemList
 from enum import Enum
 from inlist import bukiin,tatein
+from monster import MonsterList
 import os, json, codecs
 # TODO self.modeを廃止する
 
@@ -153,6 +154,19 @@ class GUI:
             cb_tin[5],
             cb_tin[6],
         ]
+        layout_monster =[
+            [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value='1', readonly=True, font=self.FONT, enable_events=True, key='floor')],
+            [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9'], key='table_monster', font=self.FONT
+                    ,vertical_scroll_only=False
+                    ,auto_size_columns=False
+                    ,col_widths=[4,13,13,13,13,13,13,13,13,13]
+                    ,justification='left'
+                    ,size=(1,10)
+                    ,background_color='#ffffff'
+                    ,alternating_row_color='#dddddd'
+                    )
+            ],
+        ]
         layout_memo = [
             [sg.Text('メモ(冒険用)',font=self.FONT)],
             [sg.Multiline('', key='memo',font=self.FONT)],
@@ -160,7 +174,7 @@ class GUI:
             [sg.Multiline('', key='memo_const',font=self.FONT)],
         ]
         layout = [
-            [sg.TabGroup([[sg.Tab('識別', layout_det, key='tab_det'), sg.Tab('装備品', layout_soubi, key='tab_soubi'), sg.Tab('メモ', layout_memo, key='tab_memo')]],key='tg_top',font=self.FONT)],
+            [sg.TabGroup([[sg.Tab('識別', layout_det, key='tab_det'), sg.Tab('装備品', layout_soubi, key='tab_soubi'), sg.Tab('モンスター', layout_monster, key='tab_monster'), sg.Tab('メモ', layout_memo, key='tab_memo')]],key='tg_top',font=self.FONT)],
             [sg.Button('リセット', key='btn_reset', font=self.FONT)],
             [sg.Text('', key='txt_info', font=('Meiryo',10))],
         ]
@@ -177,6 +191,7 @@ class GUI:
         self.window['table_tue'].expand(expand_x=True, expand_y=True)
         self.window['table_buki'].expand(expand_x=True, expand_y=True)
         self.window['table_tate'].expand(expand_x=True, expand_y=True)
+        self.window['table_monster'].expand(expand_x=True, expand_y=True)
         self.window['memo'].expand(expand_x=True, expand_y=True)
         self.window['memo'].update(self.settings.params['memo'])
         self.window['memo_const'].expand(expand_x=True, expand_y=True)
@@ -185,6 +200,7 @@ class GUI:
             self.mode = k
             self.update_table()
         self.mode = 'kusa'
+        self.update_monster(1)
         ## 印の反映
         for k in self.settings.params.keys():
             if ('bin_' in k) or ('tin_' in k):
@@ -266,6 +282,40 @@ class GUI:
     def update_info(self, msg):
         self.window['txt_info'].update(msg)
 
+    # モンスター表を更新する。st:この階層以降を表示
+    def update_monster(self, st):
+        a = MonsterList()
+        dat = []
+        row_colors = []
+        for i,monsters in enumerate(a.dat):
+            if i+1 >= st:
+                line = [f"{i+1}F"]
+                for j in range(9):
+                    if j < len(monsters):
+                        line.append(monsters[j])
+                    else:
+                        line.append('')
+                dat.append(line)
+                if i+1 in (29,30,47,48,49,56,57,58,66,67,68,77,78,93,94,95,96,97,98,99): # ドラゴン、戦車、ラビ
+                    row_colors.append([i-st+1, '#000000', '#ff88ff'])
+                elif i+1 in (3,4,5,36,37,38,61,62,72,73): # 草稼ぎ、復活稼ぎ
+                    row_colors.append([i-st+1, '#000000', '#aaffaa'])
+                elif i+1 in (6,7,22,23,44,45,85,86,87,88): # にぎり
+                    row_colors.append([i-st+1, '#000000', '#aaaaff'])
+                elif i+1 in (10,25,50,75): # 店
+                    row_colors.append([i-st+1, '#000000', '#ffffaa'])
+                elif i+1 in (8,9,31,32,33,50,51,70,71): # マゼルン
+                    row_colors.append([i-st+1, '#000000', '#aaffff'])
+                elif i+1 in (14,): # デビル稼ぎ
+                    row_colors.append([i-st+1, '#000000', '#ffaaff'])
+                else:
+                    if i % 2 == 0:
+                        row_colors.append([i-st+1, '#000000', '#FFFFFF'])
+                    else:
+                        row_colors.append([i-st+1, '#000000', '#bbbbbb'])
+
+        self.window['table_monster'].update(dat, row_colors=row_colors)
+
     def write_stat_xml(self):
         cnt,total = self.itemlist.get_stat()
 
@@ -304,7 +354,7 @@ class GUI:
         self.gui_main()
         while 1:
             ev, val = self.window.read()
-            #print(f"event='{ev}', values={val}, maximized:{self.window.maximized}")
+            print(f"event='{ev}', values={val}, maximized:{self.window.maximized}")
             # アプリ終了時に実行
             if ev in (sg.WIN_CLOSED, '-WINDOW CLOSE ATTEMPTED-', 'btn_close', 'Escape:27'): # 終了処理
                 self.settings.params['lx'] = self.window.current_location()[0]
@@ -338,6 +388,8 @@ class GUI:
                 self.update_info('')
             elif (ev.startswith('bin_')) or (ev.startswith('tin_')):
                 self.write_yin_xml(val)
+            elif ev == 'floor':
+                self.update_monster(int(val['floor']))
             elif ev == 'btn_reset':
                 self.itemlist.reset()
                 self.window['memo'].update('')
