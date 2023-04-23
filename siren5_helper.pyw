@@ -238,7 +238,7 @@ class GUI:
         return target
 
     def update_table(self):
-        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
+        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue', 'buki', 'tate']:
             data=[]
             target = self.get_target(k)
             row_colors = []
