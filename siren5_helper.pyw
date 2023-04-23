@@ -7,7 +7,7 @@ import os, json, codecs
 # TODO self.modeを廃止する
 
 SWNAME = 'siren5_helper'
-SWVER  = 'v1.0.0'
+SWVER  = 'v1.0.1'
 
 class gui_mode(Enum):
     main=1
