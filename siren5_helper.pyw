@@ -157,14 +157,14 @@ class GUI:
         ]
         layout_monster =[
             [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value=self.settings.params['floor'], readonly=True, font=self.FONT, enable_events=True, key='floor')],
-            [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9'], key='table_monster', font=self.FONT
+            [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9','10','11','12'], key='table_monster', font=self.FONT
                     ,vertical_scroll_only=False
                     ,auto_size_columns=False
-                    ,col_widths=[4,13,13,13,13,13,13,13,13,13]
+                    ,col_widths=[4,13,13,13,13,13,13,13,13,13,13,13,13]
                     ,justification='left'
-                    ,size=(1,10)
+                    ,size=(1,11)
                     ,background_color='#ffffff'
-                    ,alternating_row_color='#dddddd'
+                    ,alternating_row_color='#ffffff'
                     )
             ],
         ]
@@ -291,7 +291,7 @@ class GUI:
         for i,monsters in enumerate(a.dat):
             if i+1 >= st:
                 line = [f"{i+1}F"]
-                for j in range(9):
+                for j in range(12):
                     if j < len(monsters):
                         line.append(monsters[j])
                     else:
@@ -313,7 +313,7 @@ class GUI:
                     if i % 2 == 0:
                         row_colors.append([i-st+1, '#000000', '#FFFFFF'])
                     else:
-                        row_colors.append([i-st+1, '#000000', '#bbbbbb'])
+                        row_colors.append([i-st+1, '#000000', '#eeeeee'])
 
         self.window['table_monster'].update(dat, row_colors=row_colors)
 
