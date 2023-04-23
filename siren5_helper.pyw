@@ -20,6 +20,7 @@ class UserSettings:
         ret = {
         'lx':0,'ly':0,'lw':970,'lh':930,'kusa':[0]*34,'makimono':[0]*50,
         'udewa':[0]*29,'tubo':[0]*34,'tue':[0]*24, 'memo':'', 'memo_const':'',
+        'font_size':16,'font_family':'Meiryo',
         }
         for b in bukiin.keys():
             ret[f"bin_{b}"]=False
@@ -54,7 +55,7 @@ class GUI:
         self.settings = UserSettings(self.savefile)
         #print(self.settings.params)
         sg.theme('SystemDefault')
-        self.FONT = ('Meiryo',16)
+        self.FONT = (self.settings.params['font_family'], self.settings.params['font_size'])
         self.mode = 'kusa'
         self.window = False
         self.itemlist = ItemList()
@@ -118,12 +119,12 @@ class GUI:
         cb_tin = []
         tmp = []
         for i,k in enumerate(bukiin.keys()):
-            tmp.append(sg.Checkbox(bukiin[k], key=f"bin_{k}", enable_events=True))
+            tmp.append(sg.Checkbox(bukiin[k], key=f"bin_{k}", enable_events=True, font=self.FONT))
             if i in (6,13,19,26,32,len(bukiin.keys())-1):
                 cb_bin.append(tmp)
                 tmp = []
         for i,k in enumerate(tatein.keys()):
-            tmp.append(sg.Checkbox(tatein[k], key=f"tin_{k}", enable_events=True))
+            tmp.append(sg.Checkbox(tatein[k], key=f"tin_{k}", enable_events=True, font=self.FONT))
             if i in (7,12,15,21,27,32,len(tatein.keys())-1):
                 cb_tin.append(tmp)
                 tmp = []
