@@ -60,6 +60,7 @@ class GUI:
         self.window = False
         self.itemlist = ItemList()
         self.itemlist.load(self.settings.params)
+        self.conv_tabname = {'草':'kusa', '巻物':'makimono','腕輪':'udewa','壺':'tubo','杖':'tue'}
 
     # icon用
     def ico_path(self, relative_path):
@@ -156,6 +157,7 @@ class GUI:
             cb_tin[6],
         ]
         layout_monster =[
+<<<<<<< HEAD
             [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value=self.settings.params['floor'], readonly=True, font=self.FONT, enable_events=True, key='floor')],
             [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9','10','11','12'], key='table_monster', font=self.FONT
                     ,vertical_scroll_only=False
@@ -165,6 +167,17 @@ class GUI:
                     ,size=(1,11)
                     ,background_color='#ffffff'
                     ,alternating_row_color='#ffffff'
+=======
+            [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value='1', readonly=True, font=self.FONT, enable_events=True, key='floor')],
+            [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9'], key='table_monster', font=self.FONT
+                    ,vertical_scroll_only=False
+                    ,auto_size_columns=False
+                    ,col_widths=[4,13,13,13,13,13,13,13,13,13]
+                    ,justification='left'
+                    ,size=(1,10)
+                    ,background_color='#ffffff'
+                    ,alternating_row_color='#dddddd'
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                     )
             ],
         ]
@@ -197,11 +210,13 @@ class GUI:
         self.window['memo'].update(self.settings.params['memo'])
         self.window['memo_const'].expand(expand_x=True, expand_y=True)
         self.window['memo_const'].update(self.settings.params['memo_const'])
-        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue', 'buki', 'tate']:
-            self.mode = k
-            self.update_table()
+        self.update_table()
         self.mode = 'kusa'
+<<<<<<< HEAD
         self.update_monster(int(self.settings.params['floor']))
+=======
+        self.update_monster(1)
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
         ## 印の反映
         for k in self.settings.params.keys():
             if ('bin_' in k) or ('tin_' in k):
@@ -239,40 +254,41 @@ class GUI:
         return target
 
     def update_table(self):
-        data=[]
-        target = self.get_target(self.mode)
-        row_colors = []
-        pre_buy = target[0].buy
-        is_odd = False
-        for i,item in enumerate(target):
-            capacity = ''
-            fontcolor = 'black'
-            buy = f"{item.buy:,}"
-            sell = f"{item.sell:,}"
-            if self.mode in ['tue','tubo']:
-                if item.capa_min == item.capa_max:
-                    capacity = item.capa_max
+        for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
+            data=[]
+            target = self.get_target(k)
+            row_colors = []
+            pre_buy = target[0].buy
+            is_odd = False
+            for i,item in enumerate(target):
+                capacity = ''
+                fontcolor = 'black'
+                buy = f"{item.buy:,}"
+                sell = f"{item.sell:,}"
+                if k in ['tue','tubo']:
+                    if item.capa_min == item.capa_max:
+                        capacity = item.capa_max
+                    else:
+                        capacity = f"{item.capa_min}-{item.capa_max}"
+                    buy = f"{item.buy:,} - {item.buy_max:,}"
+                    sell = f"{item.sell:,} - {item.sell_max:,}"
+                data.append([item.name, capacity, buy, sell, item.memo])
+                if item.buy != pre_buy:
+                    pre_buy = item.buy
+                    is_odd = not is_odd
+                if is_odd:
+                    bgcolor = '#ffffb0'
                 else:
-                    capacity = f"{item.capa_min}-{item.capa_max}"
-                buy = f"{item.buy:,} - {item.buy_max:,}"
-                sell = f"{item.sell:,} - {item.sell_max:,}"
-            data.append([item.name, capacity, buy, sell, item.memo])
-            if item.buy != pre_buy:
-                pre_buy = item.buy
-                is_odd = not is_odd
-            if is_odd:
-                bgcolor = '#ffffb0'
-            else:
-                bgcolor = '#b0ffff'
-            if item.get:
-                bgcolor = '#666666'
-            if item.default_get:
-                bgcolor = '#666666'
-            if item.demerit: # 完全なデメリットアイテムは文字を灰色に
-                fontcolor='#888888'
-            row_colors.append((i, fontcolor, bgcolor))
-        self.window[f'table_{self.mode}'].update(data)
-        self.window[f'table_{self.mode}'].update(row_colors=row_colors)
+                    bgcolor = '#b0ffff'
+                if item.get:
+                    bgcolor = '#666666'
+                if item.default_get:
+                    bgcolor = '#666666'
+                if item.demerit: # 完全なデメリットアイテムは文字を灰色に
+                    fontcolor='#888888'
+                row_colors.append((i, fontcolor, bgcolor))
+            self.window[f'table_{k}'].update(data)
+            self.window[f'table_{k}'].update(row_colors=row_colors)
 
         # 統計情報の取得
         self.write_stat_xml()
@@ -291,7 +307,11 @@ class GUI:
         for i,monsters in enumerate(a.dat):
             if i+1 >= st:
                 line = [f"{i+1}F"]
+<<<<<<< HEAD
                 for j in range(12):
+=======
+                for j in range(9):
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                     if j < len(monsters):
                         line.append(monsters[j])
                     else:
@@ -313,7 +333,11 @@ class GUI:
                     if i % 2 == 0:
                         row_colors.append([i-st+1, '#000000', '#FFFFFF'])
                     else:
+<<<<<<< HEAD
                         row_colors.append([i-st+1, '#000000', '#eeeeee'])
+=======
+                        row_colors.append([i-st+1, '#000000', '#bbbbbb'])
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
 
         self.window['table_monster'].update(dat, row_colors=row_colors)
 
@@ -355,7 +379,14 @@ class GUI:
         self.gui_main()
         while 1:
             ev, val = self.window.read()
+<<<<<<< HEAD
             print(f"event='{ev}', values={val}, maximized:{self.window.maximized}")
+=======
+            for v in val.keys():
+                if 'tg_' in v:
+                    print(f"val[{v}]:{val[v]}")
+            print(f"ev={ev}")
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
             # アプリ終了時に実行
             if ev in (sg.WIN_CLOSED, '-WINDOW CLOSE ATTEMPTED-', 'btn_close', 'Escape:27'): # 終了処理
                 self.settings.params['lx'] = self.window.current_location()[0]
@@ -374,31 +405,32 @@ class GUI:
                 self.settings.save_settings()
                 break
             elif ev == 'btn_get':
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    for i in val[f'table_{k}']:
-                        self.mode = k
-                        self.mod_target(self.mode, i, True)
+                mode = self.conv_tabname[val['tg_det']]
+                for i in val[f'table_{mode}']:
+                    self.mode = mode
+                    self.mod_target(self.mode, i, True)
                 self.update_table()
                 self.update_info('')
             elif ev == 'btn_lost':
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    for i in val[f'table_{k}']:
-                        self.mode = k
-                        self.mod_target(self.mode, i, False)
+                mode = self.conv_tabname[val['tg_det']]
+                for i in val[f'table_{mode}']:
+                    self.mode = mode
+                    self.mod_target(self.mode, i, False)
                 self.update_table()
                 self.update_info('')
             elif (ev.startswith('bin_')) or (ev.startswith('tin_')):
                 self.write_yin_xml(val)
             elif ev == 'floor':
+<<<<<<< HEAD
                 self.settings.params['floor'] = val['floor']
+=======
+>>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                 self.update_monster(int(val['floor']))
             elif ev == 'btn_reset':
                 self.itemlist.reset()
                 self.window['memo'].update('')
                 pre_mode = self.mode
-                for k in ['kusa', 'makimono', 'udewa', 'tubo', 'tue']:
-                    self.mode = k
-                    self.update_table()
+                self.update_table()
                 self.mode = pre_mode
                 for k in val.keys():
                     if ('bin_' in k) or ('tin_' in k):
