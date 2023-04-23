@@ -20,7 +20,7 @@ class UserSettings:
         ret = {
         'lx':0,'ly':0,'lw':970,'lh':930,'kusa':[0]*34,'makimono':[0]*50,
         'udewa':[0]*29,'tubo':[0]*34,'tue':[0]*24, 'memo':'', 'memo_const':'',
-        'font_size':16,'font_family':'Meiryo',
+        'font_size':16,'font_family':'Meiryo','floor':'1',
         }
         for b in bukiin.keys():
             ret[f"bin_{b}"]=False
@@ -156,7 +156,7 @@ class GUI:
             cb_tin[6],
         ]
         layout_monster =[
-            [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value='1', readonly=True, font=self.FONT, enable_events=True, key='floor')],
+            [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value=self.settings.params['floor'], readonly=True, font=self.FONT, enable_events=True, key='floor')],
             [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9'], key='table_monster', font=self.FONT
                     ,vertical_scroll_only=False
                     ,auto_size_columns=False
@@ -201,7 +201,7 @@ class GUI:
             self.mode = k
             self.update_table()
         self.mode = 'kusa'
-        self.update_monster(1)
+        self.update_monster(int(self.settings.params['floor']))
         ## 印の反映
         for k in self.settings.params.keys():
             if ('bin_' in k) or ('tin_' in k):
@@ -390,6 +390,7 @@ class GUI:
             elif (ev.startswith('bin_')) or (ev.startswith('tin_')):
                 self.write_yin_xml(val)
             elif ev == 'floor':
+                self.settings.params['floor'] = val['floor']
                 self.update_monster(int(val['floor']))
             elif ev == 'btn_reset':
                 self.itemlist.reset()
