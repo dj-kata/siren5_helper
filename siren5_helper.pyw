@@ -157,7 +157,6 @@ class GUI:
             cb_tin[6],
         ]
         layout_monster =[
-<<<<<<< HEAD
             [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value=self.settings.params['floor'], readonly=True, font=self.FONT, enable_events=True, key='floor')],
             [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9','10','11','12'], key='table_monster', font=self.FONT
                     ,vertical_scroll_only=False
@@ -167,17 +166,6 @@ class GUI:
                     ,size=(1,11)
                     ,background_color='#ffffff'
                     ,alternating_row_color='#ffffff'
-=======
-            [sg.Text('この階層以降を表示:', font=self.FONT), sg.Combo([f"{i}" for i in range(1,100)], default_value='1', readonly=True, font=self.FONT, enable_events=True, key='floor')],
-            [sg.Table([['']*10 for i in range(99)], headings=['階層','1','2','3','4','5','6','7','8','9'], key='table_monster', font=self.FONT
-                    ,vertical_scroll_only=False
-                    ,auto_size_columns=False
-                    ,col_widths=[4,13,13,13,13,13,13,13,13,13]
-                    ,justification='left'
-                    ,size=(1,10)
-                    ,background_color='#ffffff'
-                    ,alternating_row_color='#dddddd'
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                     )
             ],
         ]
@@ -212,11 +200,7 @@ class GUI:
         self.window['memo_const'].update(self.settings.params['memo_const'])
         self.update_table()
         self.mode = 'kusa'
-<<<<<<< HEAD
         self.update_monster(int(self.settings.params['floor']))
-=======
-        self.update_monster(1)
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
         ## 印の反映
         for k in self.settings.params.keys():
             if ('bin_' in k) or ('tin_' in k):
@@ -307,11 +291,7 @@ class GUI:
         for i,monsters in enumerate(a.dat):
             if i+1 >= st:
                 line = [f"{i+1}F"]
-<<<<<<< HEAD
                 for j in range(12):
-=======
-                for j in range(9):
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                     if j < len(monsters):
                         line.append(monsters[j])
                     else:
@@ -333,11 +313,7 @@ class GUI:
                     if i % 2 == 0:
                         row_colors.append([i-st+1, '#000000', '#FFFFFF'])
                     else:
-<<<<<<< HEAD
                         row_colors.append([i-st+1, '#000000', '#eeeeee'])
-=======
-                        row_colors.append([i-st+1, '#000000', '#bbbbbb'])
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
 
         self.window['table_monster'].update(dat, row_colors=row_colors)
 
@@ -379,14 +355,7 @@ class GUI:
         self.gui_main()
         while 1:
             ev, val = self.window.read()
-<<<<<<< HEAD
             print(f"event='{ev}', values={val}, maximized:{self.window.maximized}")
-=======
-            for v in val.keys():
-                if 'tg_' in v:
-                    print(f"val[{v}]:{val[v]}")
-            print(f"ev={ev}")
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
             # アプリ終了時に実行
             if ev in (sg.WIN_CLOSED, '-WINDOW CLOSE ATTEMPTED-', 'btn_close', 'Escape:27'): # 終了処理
                 self.settings.params['lx'] = self.window.current_location()[0]
@@ -421,10 +390,7 @@ class GUI:
             elif (ev.startswith('bin_')) or (ev.startswith('tin_')):
                 self.write_yin_xml(val)
             elif ev == 'floor':
-<<<<<<< HEAD
                 self.settings.params['floor'] = val['floor']
-=======
->>>>>>> 10a2b461c7e11e631950edea1fccc4ee84a75113
                 self.update_monster(int(val['floor']))
             elif ev == 'btn_reset':
                 self.itemlist.reset()
