@@ -42,18 +42,14 @@ function loadXml()
 		makimono = $(xml).find('makimono').text();
 		udewa    = $(xml).find('udewa').text();
 		tubo     = $(xml).find('tubo').text();
+		okou     = $(xml).find('okou').text();
 		tue      = $(xml).find('tue').text();
-		kusa1    = $(xml).find('kusa1').text();
-		kusa3    = $(xml).find('kusa3').text();
-		kusa5    = $(xml).find('kusa5').text();
 		$('kusa').text(kusa);
 		$('makimono').text(makimono);
 		$('udewa').text(udewa);
 		$('tubo').text(tubo);
+		$('okou').text(okou);
 		$('tue').text(tue);
-		$('kusa1').text(kusa1);
-		$('kusa3').text(kusa3);
-		$('kusa5').text(kusa5);
 	});
 	
 	getxml.fail(function(error){
@@ -75,9 +71,7 @@ window.addEventListener('DOMContentLoaded', function() {
 	巻物:<makimono></makimono>, 
 	腕輪:<udewa></udewa>, 
 	壺:<tubo></tubo>, 
+	お香:<okou></okou>, 
 	杖:<tue></tue><br>
-	(100G草:<kusa1></kusa1>, 
-	300G草:<kusa3></kusa3>, 
-	500G草:<kusa5></kusa5>)
 </body>
 </html>
