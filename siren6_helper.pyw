@@ -755,6 +755,26 @@ class MainWindow(MainWindowUI):
             self.scroll_current_monster_table(1)
         elif action == "monster_scroll_up":
             self.scroll_current_monster_table(-1)
+        elif action.startswith("open_dungeon_data_tab:"):
+            self.open_dungeon_data_tab(action.split(":", 1)[1])
+        elif action.startswith("item_tab_index:"):
+            try:
+                self.open_item_category_tab(int(action.split(":", 1)[1]))
+            except ValueError:
+                logger.warning("不正な識別タブホットキーアクション: %s", action)
+
+    def open_dungeon_data_tab(self, label):
+        if not self.dungeon_data_tabs:
+            return
+        tab_index = self.find_dungeon_data_tab(label)
+        if tab_index >= 0:
+            self.dungeon_data_tabs.setCurrentIndex(tab_index)
+
+    def open_item_category_tab(self, tab_index):
+        tabs = self.active_item_tabs()
+        if not tabs or not 0 <= tab_index < tabs.count():
+            return
+        tabs.setCurrentIndex(tab_index)
 
     def active_item_tabs(self):
         if not self.dungeon_data_tabs:

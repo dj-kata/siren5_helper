@@ -610,7 +610,19 @@ class MainWindowUI(QMainWindow):
                     "ctrl+shift+j": lambda: self.global_hotkey_pressed.emit(
                         "monster_scroll_down"
                     ),
+                    "ctrl+shift+a": lambda: self.global_hotkey_pressed.emit(
+                        "open_dungeon_data_tab:アイテム+モンスター"
+                    ),
+                    "ctrl+shift+b": lambda: self.global_hotkey_pressed.emit(
+                        "open_dungeon_data_tab:ボヨヨン壁"
+                    ),
                 }
+                for index in range(8):
+                    hotkeys[f"ctrl+shift+{index + 1}"] = (
+                        lambda index=index: self.global_hotkey_pressed.emit(
+                            f"item_tab_index:{index}"
+                        )
+                    )
                 for hotkey, callback in hotkeys.items():
                     keyboard.add_hotkey(hotkey, callback, suppress=False)
                 logger.info(
@@ -634,6 +646,16 @@ class MainWindowUI(QMainWindow):
                     "ctrl+shift+u",
                     "ctrl+shift+k",
                     "ctrl+shift+j",
+                    "ctrl+shift+a",
+                    "ctrl+shift+b",
+                    "ctrl+shift+1",
+                    "ctrl+shift+2",
+                    "ctrl+shift+3",
+                    "ctrl+shift+4",
+                    "ctrl+shift+5",
+                    "ctrl+shift+6",
+                    "ctrl+shift+7",
+                    "ctrl+shift+8",
                 ):
                     keyboard.remove_hotkey(hotkey)
                 logger.info("グローバルホットキーを解除しました")
