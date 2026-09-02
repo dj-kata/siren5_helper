@@ -41,6 +41,7 @@ class ByoyonCandidate:
     direction: str
     reflections: tuple[str, ...]
     path: tuple[ByoyonStep, ...]
+    split_path: tuple[ByoyonStep, ...]
 
     @property
     def display_text(self) -> str:
@@ -78,6 +79,8 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
     reflection_count = 0
     unreflected_count = 0
     first_reflection_immediate = None
+    split_reflections = None
+    split_path = None
 
     while True:
         dr, dc = direction
@@ -95,6 +98,8 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
                 path,
                 hit_sides,
                 first_reflection_immediate,
+                split_reflections,
+                split_path,
             )
 
         if cell_type == NONE:
@@ -109,6 +114,8 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
                     path,
                     hit_sides,
                     first_reflection_immediate,
+                    split_reflections,
+                    split_path,
                 )
         elif cell_type == BYYN:
             if first_reflection_immediate is None:
@@ -122,6 +129,8 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
                     path,
                     hit_sides,
                     first_reflection_immediate,
+                    split_reflections,
+                    split_path,
                 )
 
             h_adj_type = _type_from(current_row, current_column - dc, walls, grid_size)
@@ -157,20 +166,15 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
                     path,
                     hit_sides,
                     first_reflection_immediate,
+                    split_reflections,
+                    split_path,
                 )
 
             reflection_count += 1
             unreflected_count = 1
-            if _can_split(hit_sides):
-                return _candidate_if_valid(
-                    row,
-                    column,
-                    direction_name,
-                    reflections,
-                    path,
-                    hit_sides,
-                    first_reflection_immediate,
-                )
+            if split_reflections is None and _can_split(hit_sides):
+                split_reflections = tuple(reflections)
+                split_path = tuple(path)
         else:
             return None
 
@@ -183,6 +187,8 @@ def simulate_byoyon_route(row, column, direction_name, vector, walls, grid_size)
                 path,
                 hit_sides,
                 first_reflection_immediate,
+                split_reflections,
+                split_path,
             )
 
 
@@ -194,15 +200,22 @@ def _candidate_if_valid(
     path,
     hit_sides,
     first_reflection_immediate,
+    split_reflections=None,
+    split_path=None,
 ):
     if not first_reflection_immediate or not _can_split(hit_sides):
         return None
+    if split_reflections is None:
+        split_reflections = tuple(reflections)
+    if split_path is None:
+        split_path = tuple(path)
     return ByoyonCandidate(
         row,
         column,
         direction_name,
-        tuple(reflections),
+        tuple(split_reflections),
         tuple(path),
+        tuple(split_path),
     )
 
 

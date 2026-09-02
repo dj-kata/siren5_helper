@@ -1438,8 +1438,16 @@ class MainWindow(MainWindowUI):
             self.update_byoyon_wall_cells()
             return
         candidate = self.byoyon_candidates[index]
+        landing_cell = self.last_byoyon_path_cell(candidate)
+        if candidate.path[-1].row is None:
+            landing_text = " / 落下: 範囲外"
+        elif landing_cell is not None:
+            landing_text = f" / 落下: {landing_cell[0] + 1}行{landing_cell[1] + 1}列"
+        else:
+            landing_text = ""
         self.set_byoyon_message(
-            f"{index + 1}/{len(self.byoyon_candidates)}  {candidate.display_text}"
+            f"{index + 1}/{len(self.byoyon_candidates)}  "
+            f"{candidate.display_text}{landing_text}"
         )
         self.update_byoyon_wall_cells(candidate)
 
@@ -1465,6 +1473,7 @@ class MainWindow(MainWindowUI):
         candidate_brush = QBrush(QColor("#ffb3b8"))
         path_brush = QBrush(QColor("#fff3a6"))
         reflection_brush = QBrush(QColor("#8fd7ff"))
+        landing_brush = QBrush(QColor("#7ee081"))
         empty_brush = QBrush(QColor("#ffffff"))
         direction_markers = {
             "右下": "↘",
@@ -1475,13 +1484,20 @@ class MainWindow(MainWindowUI):
         path_cells = set()
         reflection_cells = {}
         candidate_cell = None
+        landing_cell = None
         if candidate is not None:
             candidate_cell = (candidate.row, candidate.column)
+            last_step = self.last_byoyon_path_cell(candidate)
+            if last_step is not None and last_step != candidate_cell:
+                landing_cell = last_step
             reflection_index = 1
             for step in candidate.path:
                 if step.row is None or step.column is None:
                     continue
                 path_cells.add((step.row, step.column))
+            for step in candidate.split_path:
+                if step.row is None or step.column is None:
+                    continue
                 if step.reflection_side:
                     reflection_cells[(step.row, step.column)] = str(reflection_index)
                     reflection_index += 1
@@ -1500,12 +1516,21 @@ class MainWindow(MainWindowUI):
                 elif (row, column) in reflection_cells:
                     item.setBackground(reflection_brush)
                     item.setText(reflection_cells[(row, column)])
+                elif (row, column) == landing_cell:
+                    item.setBackground(landing_brush)
+                    item.setText("落")
                 elif (row, column) in path_cells:
                     item.setBackground(path_brush)
                     item.setText("")
                 else:
                     item.setBackground(empty_brush)
                     item.setText("")
+
+    def last_byoyon_path_cell(self, candidate):
+        for step in reversed(candidate.path):
+            if step.row is not None and step.column is not None:
+                return step.row, step.column
+        return None
 
     def reset_manual_shop_search(self):
         for controls in self.manual_shop_control_sets():
