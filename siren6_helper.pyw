@@ -90,6 +90,7 @@ startup_trace("imported src.funcs")
 from src.item import ItemList
 startup_trace("imported src.item")
 from src.define import live_exploration_mode_has_status, live_exploration_mode_label
+from src.byoyon_wall import GRID_SIZE, find_byoyon_candidates
 from src.live_exploration_mode import detect_live_exploration_mode
 from src.logger import get_logger
 startup_trace("imported src.logger")
@@ -185,6 +186,9 @@ MONSTER_TABLE_ICON_SIZES = {
     "medium": 36,
     "large": 48,
 }
+BYOYON_GRID_MIN_SIZE = 10
+BYOYON_GRID_MAX_SIZE = 25
+BYOYON_GRID_CELL_SIZE = 28
 MONSTER_ICON_NAME_ALIASES = {
     "洞窟マムル": "どうくつマムル",
 }
@@ -301,6 +305,8 @@ class MainWindow(MainWindowUI):
         self.last_shop_result_signature = None
         self.last_shop_status_message = ""
         self.manual_shop_controls_syncing = False
+        self.byoyon_drag_wall_value = None
+        self.byoyon_candidates = []
         self.item_identification_revision = 0
         self.shop_candidate_history = {}
         self.shop_price_visible = False
@@ -541,6 +547,7 @@ class MainWindow(MainWindowUI):
         self.monster_table_icon_size_combo.currentIndexChanged.connect(self.on_monster_table_option_changed)
         for table in self.all_monster_tables():
             table.viewport().installEventFilter(self)
+        self.init_byoyon_ui()
         self.restore_gui_state()
         self.connect_gui_state_signals()
         self.update_item_tables()
@@ -1263,10 +1270,222 @@ class MainWindow(MainWindowUI):
         self.touch_item_identification_state()
         self.memo_edit.clear()
         self.reset_manual_shop_search()
+        self.reset_byoyon_wall()
         self.reset_monster_floor_filter()
         self.update_monster_table()
         self.update_item_tables()
         self.statusBar().showMessage("リセットしました", 3000)
+
+    def init_byoyon_ui(self):
+        if not self.byoyon_table:
+            return
+        self.byoyon_table.cellPressed.connect(self.start_byoyon_wall_drag)
+        self.byoyon_table.cellEntered.connect(self.drag_byoyon_wall_cell)
+        self.byoyon_calculate_button.clicked.connect(self.calculate_byoyon_wall)
+        self.byoyon_reset_button.clicked.connect(self.reset_byoyon_wall)
+        self.byoyon_size_minus_button.clicked.connect(
+            lambda: self.resize_byoyon_grid(-1)
+        )
+        self.byoyon_size_plus_button.clicked.connect(
+            lambda: self.resize_byoyon_grid(1)
+        )
+        self.byoyon_candidate_combo.currentIndexChanged.connect(
+            self.on_byoyon_candidate_changed
+        )
+        self.setup_byoyon_grid(GRID_SIZE, set())
+        self.clear_byoyon_candidates()
+        self.update_byoyon_wall_cells()
+
+    def setup_byoyon_grid(self, grid_size, walls):
+        self.byoyon_table.setRowCount(grid_size)
+        self.byoyon_table.setColumnCount(grid_size)
+        self.byoyon_table.setFixedSize(
+            grid_size * BYOYON_GRID_CELL_SIZE + 6,
+            grid_size * BYOYON_GRID_CELL_SIZE + 6,
+        )
+        for index in range(grid_size):
+            self.byoyon_table.setColumnWidth(index, BYOYON_GRID_CELL_SIZE)
+            self.byoyon_table.setRowHeight(index, BYOYON_GRID_CELL_SIZE)
+        for row in range(grid_size):
+            for column in range(grid_size):
+                item = self.byoyon_table.item(row, column)
+                if item is None:
+                    item = QTableWidgetItem("")
+                    self.byoyon_table.setItem(row, column, item)
+                item.setData(Qt.UserRole, (row, column) in walls)
+        self.update_byoyon_size_controls()
+
+    def resize_byoyon_grid(self, delta):
+        grid_size = self.byoyon_table.rowCount()
+        new_size = min(
+            BYOYON_GRID_MAX_SIZE,
+            max(BYOYON_GRID_MIN_SIZE, grid_size + delta),
+        )
+        if new_size == grid_size:
+            return
+        walls = {
+            (row, column)
+            for row, column in self.current_byoyon_walls()
+            if row < new_size and column < new_size
+        }
+        self.byoyon_drag_wall_value = None
+        self.clear_byoyon_candidates()
+        self.setup_byoyon_grid(new_size, walls)
+        self.update_byoyon_wall_cells()
+
+    def update_byoyon_size_controls(self):
+        grid_size = self.byoyon_table.rowCount()
+        self.byoyon_size_label.setText(f"{grid_size} x {grid_size}")
+        self.byoyon_size_minus_button.setEnabled(grid_size > BYOYON_GRID_MIN_SIZE)
+        self.byoyon_size_plus_button.setEnabled(grid_size < BYOYON_GRID_MAX_SIZE)
+
+    def start_byoyon_wall_drag(self, row, column):
+        if not (QApplication.mouseButtons() & Qt.LeftButton):
+            return
+        item = self.byoyon_table.item(row, column)
+        if item is None:
+            return
+        self.byoyon_drag_wall_value = not bool(item.data(Qt.UserRole))
+        self.set_byoyon_wall_cell(row, column, self.byoyon_drag_wall_value)
+
+    def drag_byoyon_wall_cell(self, row, column):
+        if not (QApplication.mouseButtons() & Qt.LeftButton):
+            self.byoyon_drag_wall_value = None
+            return
+        if self.byoyon_drag_wall_value is None:
+            item = self.byoyon_table.item(row, column)
+            if item is None:
+                return
+            self.byoyon_drag_wall_value = not bool(item.data(Qt.UserRole))
+        self.set_byoyon_wall_cell(row, column, self.byoyon_drag_wall_value)
+
+    def set_byoyon_wall_cell(self, row, column, wall_value):
+        item = self.byoyon_table.item(row, column)
+        if item is None or bool(item.data(Qt.UserRole)) == wall_value:
+            return
+        item.setData(Qt.UserRole, wall_value)
+        self.clear_byoyon_candidates()
+        self.update_byoyon_wall_cells()
+
+    def reset_byoyon_wall(self):
+        if not self.byoyon_table:
+            return
+        for row in range(self.byoyon_table.rowCount()):
+            for column in range(self.byoyon_table.columnCount()):
+                item = self.byoyon_table.item(row, column)
+                if item is not None:
+                    item.setData(Qt.UserRole, False)
+        self.byoyon_drag_wall_value = None
+        self.clear_byoyon_candidates()
+        self.update_byoyon_wall_cells()
+
+    def calculate_byoyon_wall(self):
+        walls = self.current_byoyon_walls()
+        self.clear_byoyon_candidates()
+        if not walls:
+            self.set_byoyon_message("壁を指定してください")
+            return
+
+        candidates = find_byoyon_candidates(walls, self.byoyon_table.rowCount())
+        if not candidates:
+            self.set_byoyon_message("不可能")
+            self.update_byoyon_wall_cells()
+            return
+
+        self.byoyon_candidates = candidates
+        self.byoyon_candidate_combo.blockSignals(True)
+        self.byoyon_candidate_combo.clear()
+        for index, candidate in enumerate(candidates, start=1):
+            self.byoyon_candidate_combo.addItem(f"{index}: {candidate.display_text}")
+        self.byoyon_candidate_combo.setCurrentIndex(0)
+        self.byoyon_candidate_combo.blockSignals(False)
+        self.show_selected_byoyon_candidate()
+
+    def clear_byoyon_candidates(self):
+        self.byoyon_candidates = []
+        if self.byoyon_candidate_combo:
+            self.byoyon_candidate_combo.blockSignals(True)
+            self.byoyon_candidate_combo.clear()
+            self.byoyon_candidate_combo.blockSignals(False)
+        self.set_byoyon_message("")
+
+    def on_byoyon_candidate_changed(self, _index):
+        self.show_selected_byoyon_candidate()
+
+    def show_selected_byoyon_candidate(self):
+        index = self.byoyon_candidate_combo.currentIndex()
+        if not 0 <= index < len(self.byoyon_candidates):
+            self.update_byoyon_wall_cells()
+            return
+        candidate = self.byoyon_candidates[index]
+        self.set_byoyon_message(
+            f"{index + 1}/{len(self.byoyon_candidates)}  {candidate.display_text}"
+        )
+        self.update_byoyon_wall_cells(candidate)
+
+    def set_byoyon_message(self, message):
+        if self.byoyon_message_label:
+            self.byoyon_message_label.setText(message)
+
+    def current_byoyon_walls(self):
+        walls = set()
+        if not self.byoyon_table:
+            return walls
+        for row in range(self.byoyon_table.rowCount()):
+            for column in range(self.byoyon_table.columnCount()):
+                item = self.byoyon_table.item(row, column)
+                if item is not None and bool(item.data(Qt.UserRole)):
+                    walls.add((row, column))
+        return walls
+
+    def update_byoyon_wall_cells(self, candidate=None):
+        if not self.byoyon_table:
+            return
+        wall_brush = QBrush(QColor("#b12ad8"))
+        candidate_brush = QBrush(QColor("#ffb3b8"))
+        path_brush = QBrush(QColor("#fff3a6"))
+        reflection_brush = QBrush(QColor("#8fd7ff"))
+        empty_brush = QBrush(QColor("#ffffff"))
+        direction_markers = {
+            "右下": "↘",
+            "左下": "↙",
+            "左上": "↖",
+            "右上": "↗",
+        }
+        path_cells = set()
+        reflection_cells = {}
+        candidate_cell = None
+        if candidate is not None:
+            candidate_cell = (candidate.row, candidate.column)
+            reflection_index = 1
+            for step in candidate.path:
+                if step.row is None or step.column is None:
+                    continue
+                path_cells.add((step.row, step.column))
+                if step.reflection_side:
+                    reflection_cells[(step.row, step.column)] = str(reflection_index)
+                    reflection_index += 1
+        for row in range(self.byoyon_table.rowCount()):
+            for column in range(self.byoyon_table.columnCount()):
+                item = self.byoyon_table.item(row, column)
+                if item is None:
+                    continue
+                item.setTextAlignment(Qt.AlignCenter)
+                if bool(item.data(Qt.UserRole)):
+                    item.setBackground(wall_brush)
+                    item.setText("")
+                elif (row, column) == candidate_cell:
+                    item.setBackground(candidate_brush)
+                    item.setText(direction_markers.get(candidate.direction, "候"))
+                elif (row, column) in reflection_cells:
+                    item.setBackground(reflection_brush)
+                    item.setText(reflection_cells[(row, column)])
+                elif (row, column) in path_cells:
+                    item.setBackground(path_brush)
+                    item.setText("")
+                else:
+                    item.setBackground(empty_brush)
+                    item.setText("")
 
     def reset_manual_shop_search(self):
         for controls in self.manual_shop_control_sets():
@@ -1990,6 +2209,11 @@ class MainWindow(MainWindowUI):
                 item.get,
             )
             self.hide_shop_price_state()
+            if category in ("buki", "tate"):
+                self.select_items_in_table(category, [item])
+                self.show_shop_status_message(f"OCR一致: {item.name} (武器・盾は識別チェック対象外)", 4000)
+                return
+
             before_get = item.get
             item.get = True
             if not before_get:

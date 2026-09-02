@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTabWidget,
     QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -65,6 +66,14 @@ class MainWindowUI(QMainWindow):
         self.monster_table = None
         self.item_monster_monster_table = None
         self.shop_candidate_table = None
+        self.byoyon_table = None
+        self.byoyon_calculate_button = None
+        self.byoyon_reset_button = None
+        self.byoyon_size_minus_button = None
+        self.byoyon_size_plus_button = None
+        self.byoyon_size_label = None
+        self.byoyon_candidate_combo = None
+        self.byoyon_message_label = None
         self.item_tables = {}
         self.item_monster_item_tables = {}
         self.item_count_labels = {}
@@ -280,9 +289,64 @@ class MainWindowUI(QMainWindow):
         self.shop_candidate_table.setColumnWidth(1, 70)
         candidate_layout.addWidget(self.shop_candidate_table)
         self.dungeon_data_tabs.addTab(candidate_tab, "識別候補")
+        self.dungeon_data_tabs.addTab(self.create_byoyon_tab(), "ボヨヨン壁")
         self.dungeon_data_tabs.addTab(self.create_memo_tab(), "メモ")
         layout.addWidget(self.dungeon_data_tabs)
 
+        return tab
+
+    def create_byoyon_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+
+        button_layout = QHBoxLayout()
+        self.byoyon_calculate_button = QPushButton("計算")
+        self.byoyon_reset_button = QPushButton("リセット")
+        self.byoyon_size_minus_button = QPushButton("-")
+        self.byoyon_size_minus_button.setFixedWidth(32)
+        self.byoyon_size_plus_button = QPushButton("+")
+        self.byoyon_size_plus_button.setFixedWidth(32)
+        self.byoyon_size_label = QLabel("16 x 16")
+        self.byoyon_candidate_combo = QComboBox()
+        self.byoyon_candidate_combo.setMinimumWidth(360)
+        button_layout.addWidget(self.byoyon_calculate_button)
+        button_layout.addWidget(self.byoyon_reset_button)
+        button_layout.addWidget(QLabel("広さ:"))
+        button_layout.addWidget(self.byoyon_size_minus_button)
+        button_layout.addWidget(self.byoyon_size_label)
+        button_layout.addWidget(self.byoyon_size_plus_button)
+        button_layout.addWidget(QLabel("候補:"))
+        button_layout.addWidget(self.byoyon_candidate_combo)
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        self.byoyon_message_label = QLabel("")
+        self.byoyon_message_label.setMinimumHeight(24)
+        layout.addWidget(self.byoyon_message_label)
+
+        self.byoyon_table = QTableWidget(16, 16)
+        self.byoyon_table.setSelectionMode(QAbstractItemView.NoSelection)
+        self.byoyon_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.byoyon_table.setMouseTracking(True)
+        self.byoyon_table.setShowGrid(True)
+        self.byoyon_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.byoyon_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.byoyon_table.horizontalHeader().setVisible(False)
+        self.byoyon_table.verticalHeader().setVisible(False)
+        self.byoyon_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.byoyon_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.byoyon_table.setFixedSize(16 * 28 + 6, 16 * 28 + 6)
+        for index in range(16):
+            self.byoyon_table.setColumnWidth(index, 28)
+            self.byoyon_table.setRowHeight(index, 28)
+        for row in range(16):
+            for column in range(16):
+                item = QTableWidgetItem("")
+                item.setData(Qt.UserRole, False)
+                self.byoyon_table.setItem(row, column, item)
+        layout.addWidget(self.byoyon_table)
+
+        layout.addStretch()
         return tab
 
     def create_item_table(self, key):

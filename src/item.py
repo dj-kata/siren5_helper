@@ -228,10 +228,10 @@ class ItemList:
             tmp.get = tmp.default_get or (bool(params.get('okou', [])[i]) if i < len(params.get('okou', [])) else False)
         for i,tmp in enumerate(self.tue):
             tmp.get = tmp.default_get or (bool(params.get('tue', [])[i]) if i < len(params.get('tue', [])) else False)
-        for i,tmp in enumerate(self.buki):
-            tmp.get = tmp.default_get or (bool(params.get('buki', [])[i]) if i < len(params.get('buki', [])) else False)
-        for i,tmp in enumerate(self.tate):
-            tmp.get = tmp.default_get or (bool(params.get('tate', [])[i]) if i < len(params.get('tate', [])) else False)
+        for tmp in self.buki:
+            tmp.get = tmp.default_get
+        for tmp in self.tate:
+            tmp.get = tmp.default_get
 
     def save(self, params):
         """チェック済みかどうかの状態をdictへ出力
@@ -254,9 +254,9 @@ class ItemList:
         for i,tmp in enumerate(self.tue):
             params['tue'][i] = tmp.get
         for i,tmp in enumerate(self.buki):
-            params['buki'][i] = tmp.get
+            params['buki'][i] = tmp.default_get
         for i,tmp in enumerate(self.tate):
-            params['tate'][i] = tmp.get
+            params['tate'][i] = tmp.default_get
 
     def reset(self):
         for i in self.kusa:
