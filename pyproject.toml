@@ -1,7 +1,7 @@
 [project]
 name = "siren6-helper"
 version = "0.1.0"
-description = "Add your description here"
+description = "siren6 helper"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
