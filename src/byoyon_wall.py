@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 
-GRID_SIZE = 16
+GRID_SIZE = 25
 MAX_UNREFLECTED_STEPS = 10
 MAX_REFLECTIONS = 24
 

@@ -2787,6 +2787,12 @@ class MainWindow(MainWindowUI):
         })
 
     def select_items_in_table(self, category, items):
+        current_tab_label = ""
+        if self.dungeon_data_tabs:
+            current_tab_label = self.dungeon_data_tabs.tabText(self.dungeon_data_tabs.currentIndex())
+        if current_tab_label not in ("アイテム", "アイテム+モンスター"):
+            return
+
         primary_table = self.item_tables.get(category)
         item_monster_table = self.item_monster_item_tables.get(category)
         table = item_monster_table if self.is_item_monster_tab_active() and item_monster_table else primary_table
@@ -2802,7 +2808,9 @@ class MainWindow(MainWindowUI):
                 self.dungeon_data_tabs.setCurrentIndex(item_monster_index)
             self.item_monster_identify_tabs.setCurrentIndex(tab_index)
         else:
-            self.dungeon_data_tabs.setCurrentIndex(0)
+            item_index = self.find_dungeon_data_tab("アイテム")
+            if item_index >= 0:
+                self.dungeon_data_tabs.setCurrentIndex(item_index)
             self.identify_tabs.setCurrentIndex(tab_index)
 
         table.clearSelection()

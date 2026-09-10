@@ -40,6 +40,7 @@ except ImportError:
 from src.funcs import load_ui_text
 from src.logger import get_logger
 from src.config import CAPTURE_MODE_DIRECT, CAPTURE_MODE_FULLSCREEN, CAPTURE_MODE_OBS
+from src.byoyon_wall import GRID_SIZE
 
 logger = get_logger(__name__)
 
@@ -306,7 +307,7 @@ class MainWindowUI(QMainWindow):
         self.byoyon_size_minus_button.setFixedWidth(32)
         self.byoyon_size_plus_button = QPushButton("+")
         self.byoyon_size_plus_button.setFixedWidth(32)
-        self.byoyon_size_label = QLabel("16 x 16")
+        self.byoyon_size_label = QLabel(f"{GRID_SIZE} x {GRID_SIZE}")
         self.byoyon_candidate_combo = QComboBox()
         self.byoyon_candidate_combo.setMinimumWidth(360)
         button_layout.addWidget(self.byoyon_calculate_button)
@@ -324,7 +325,7 @@ class MainWindowUI(QMainWindow):
         self.byoyon_message_label.setMinimumHeight(24)
         layout.addWidget(self.byoyon_message_label)
 
-        self.byoyon_table = QTableWidget(16, 16)
+        self.byoyon_table = QTableWidget(GRID_SIZE, GRID_SIZE)
         self.byoyon_table.setSelectionMode(QAbstractItemView.NoSelection)
         self.byoyon_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.byoyon_table.setMouseTracking(True)
@@ -335,12 +336,12 @@ class MainWindowUI(QMainWindow):
         self.byoyon_table.verticalHeader().setVisible(False)
         self.byoyon_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.byoyon_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.byoyon_table.setFixedSize(16 * 28 + 6, 16 * 28 + 6)
-        for index in range(16):
+        self.byoyon_table.setFixedSize(GRID_SIZE * 28 + 6, GRID_SIZE * 28 + 6)
+        for index in range(GRID_SIZE):
             self.byoyon_table.setColumnWidth(index, 28)
             self.byoyon_table.setRowHeight(index, 28)
-        for row in range(16):
-            for column in range(16):
+        for row in range(GRID_SIZE):
+            for column in range(GRID_SIZE):
                 item = QTableWidgetItem("")
                 item.setData(Qt.UserRole, False)
                 self.byoyon_table.setItem(row, column, item)
