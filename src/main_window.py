@@ -4,6 +4,7 @@ OBSから取得したゲーム画面を監視するための最小構成。
 """
 
 import base64
+from html import escape
 
 from PySide6.QtCore import QByteArray, Qt
 from PySide6.QtGui import QAction, QActionGroup, QIntValidator
@@ -41,6 +42,7 @@ from src.funcs import load_ui_text
 from src.logger import get_logger
 from src.config import CAPTURE_MODE_DIRECT, CAPTURE_MODE_FULLSCREEN, CAPTURE_MODE_OBS
 from src.byoyon_wall import GRID_SIZE
+from src.network_info import get_http_viewer_url
 
 logger = get_logger(__name__)
 
@@ -54,6 +56,7 @@ class MainWindowUI(QMainWindow):
         self.ui = load_ui_text(self.config)
 
         self.obs_status_label = None
+        self.http_status_label = None
         self.top_tabs = None
         self.dungeon_data_tabs = None
         self.identify_tabs = None
@@ -117,6 +120,10 @@ class MainWindowUI(QMainWindow):
 
         self.obs_status_label = QLabel(self.ui.obs.not_connected)
         self.update_obs_status_label(False)
+        self.http_status_label = QLabel("")
+        self.http_status_label.setOpenExternalLinks(True)
+        self.update_http_status_label()
+        self.statusBar().addPermanentWidget(self.http_status_label)
         self.statusBar().addPermanentWidget(self.obs_status_label)
         self.statusBar().showMessage(self.ui.main.status_ready)
 
@@ -141,6 +148,25 @@ class MainWindowUI(QMainWindow):
             color = "gray"
             self.obs_status_label.setText(f"取得: {self.ui.feature.capture_mode_none}")
         self.obs_status_label.setStyleSheet(f"color: {color}; font-weight: bold;")
+
+    def update_http_status_label(self):
+        if not self.http_status_label:
+            return
+        if not bool(getattr(self.config, "http_server_enabled", False)):
+            self.http_status_label.setText("")
+            self.http_status_label.setVisible(False)
+            return
+        url = get_http_viewer_url(
+            getattr(self.config, "http_server_port", 8787),
+            getattr(self.config, "http_server_interface", ""),
+        )
+        if not url:
+            self.http_status_label.setText("HTTP: URL取得不可")
+            self.http_status_label.setVisible(True)
+            return
+        escaped_url = escape(url, quote=True)
+        self.http_status_label.setText(f'HTTP: <a href="{escaped_url}">{escaped_url}</a>')
+        self.http_status_label.setVisible(True)
 
     def create_identification_tab(self):
         tab = QWidget()

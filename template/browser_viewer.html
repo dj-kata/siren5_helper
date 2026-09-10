@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siren 6 Helper</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --line: #d9e0e8;
+  --text: #18202a;
+  --muted: #607080;
+  --accent: #0f766e;
+  --accent-soft: #d8f1ee;
+  --wall: #7c3aed;
+  --path: #fde68a;
+  --reflect: #93c5fd;
+  --start: #fecdd3;
+  --landing: #86efac;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.topbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px 8px;
+  overflow-x: auto;
+}
+.brand {
+  flex: 0 0 auto;
+  font-weight: 700;
+  margin-right: 8px;
+}
+button, select, input { font: inherit; }
+button, .tab-button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:disabled {
+  color: #9aa4af;
+  cursor: default;
+}
+button.active, .tab-button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: #064e48;
+}
+main {
+  padding: 14px 14px 78px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.view { display: none; }
+.view.active { display: block; }
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+h1 {
+  font-size: 20px;
+  margin: 0 12px 0 0;
+}
+.muted { color: var(--muted); }
+.status-text {
+  margin-left: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.controls, .settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.settings-row {
+  padding: 10px 0;
+}
+.settings-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.category-tabs {
+  position: sticky;
+  top: 51px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  padding: 7px 8px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+th {
+  position: sticky;
+  top: 96px;
+  z-index: 5;
+  background: #eef3f8;
+  font-weight: 700;
+}
+tr.item-row { cursor: pointer; }
+tr.item-row.selected td {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+tr.identified td {
+  background: #d2d6dc;
+  color: #6b7280;
+}
+tr.odd-price:not(.identified) td { background: #eefcfb; }
+tr.even-price:not(.identified) td { background: #fffbe6; }
+.shop-panel {
+  display: none;
+  margin: 0 0 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.shop-panel.visible { display: block; }
+.shop-panel-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  background: #eef3f8;
+}
+.candidate-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+}
+.candidate-chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.candidate-chip:hover { border-color: var(--accent); }
+.monster-floor {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+.monster-floor h2 {
+  font-size: 16px;
+  margin: 0;
+  padding: 8px 10px;
+  background: #eef3f8;
+  border-bottom: 1px solid var(--line);
+}
+.monster-group {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.monster-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.monster {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+.monster img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.byoyon-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, max-content) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.grid {
+  display: grid;
+  gap: 1px;
+  background: #9aa6b2;
+  border: 1px solid #9aa6b2;
+  width: max-content;
+}
+.cell {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  padding: 0;
+  text-align: center;
+  line-height: 24px;
+}
+.cell.wall { background: var(--wall); }
+.cell.path { background: var(--path); }
+.cell.reflect { background: var(--reflect); }
+.cell.start { background: var(--start); }
+.cell.landing { background: var(--landing); }
+.result-list {
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.result-item {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.result-item.active { background: var(--accent-soft); }
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.97);
+}
+.action-bar.visible { display: flex; }
+.action-name {
+  font-weight: 700;
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  main { padding: 10px 10px 78px; }
+  .byoyon-layout { grid-template-columns: 1fr; }
+  th { top: 92px; }
+  .monster-group { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">Siren 6 Helper</div>
+    <button class="tab-button active" data-view="items">アイテム識別</button>
+    <button class="tab-button" data-view="monsters">モンスター</button>
+    <button class="tab-button" data-view="byoyon">ボヨヨン壁</button>
+    <button class="tab-button" data-view="settings">設定</button>
+    <span id="syncStatus" class="status-text">自動更新中</span>
+  </div>
+</header>
+<main>
+  <section id="items" class="view active">
+    <div class="section-head">
+      <h1>アイテム識別状況</h1>
+      <span id="itemDungeon" class="muted"></span>
+    </div>
+    <div id="shopPanel" class="shop-panel"></div>
+    <div id="categoryTabs" class="category-tabs"></div>
+    <div id="itemTable"></div>
+  </section>
+
+  <section id="monsters" class="view">
+    <div class="section-head">
+      <h1>階層モンスター一覧</h1>
+      <div class="controls">
+        <select id="dungeonSelect"></select>
+        <span id="monsterStartFloor" class="muted"></span>
+      </div>
+    </div>
+    <div id="monsterFloors"></div>
+  </section>
+
+  <section id="byoyon" class="view">
+    <div class="section-head">
+      <h1>ボヨヨン壁シミュレーション</h1>
+      <div class="controls">
+        <button id="calcButton">計算</button>
+        <button id="resetByoyonButton">リセット</button>
+        <button id="sizeDownButton">-</button>
+        <span id="gridSizeLabel"></span>
+        <button id="sizeUpButton">+</button>
+      </div>
+    </div>
+    <div class="byoyon-layout">
+      <div id="byoyonGrid" class="grid"></div>
+      <div>
+        <p id="byoyonMessage" class="muted"></p>
+        <div id="byoyonResults" class="result-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="settings" class="view">
+    <div class="section-head">
+      <h1>ブラウザ設定</h1>
+    </div>
+    <div class="settings-row">
+      <label><input type="checkbox" id="showShopCandidatesCheck"> 価格識別候補を表示する</label>
+      <label><input type="checkbox" id="autoJumpShopCandidateCheck"> 価格識別時に候補のページへ自動ジャンプする</label>
+    </div>
+  </section>
+</main>
+<div id="itemActionBar" class="action-bar">
+  <div id="selectedItemName" class="action-name"></div>
+  <button id="markIdentifiedButton">識別済みにする</button>
+  <button id="markUnknownButton">未識別にする</button>
+</div>
+<script>
+const DIRECTIONS = {
+  "左上": [-1, -1],
+  "右上": [-1, 1],
+  "左下": [1, -1],
+  "右下": [1, 1]
+};
+const SIDE_LABELS = {top: "上", bottom: "下", left: "左", right: "右"};
+const DEFAULT_SETTINGS = {
+  showShopCandidates: true,
+  autoJumpShopCandidate: true
+};
+let browserSettings = loadBrowserSettings();
+let itemData = null;
+let dungeonData = null;
+let shopData = null;
+let activeCategory = "kusa";
+let selectedItem = null;
+let gridSize = 25;
+let walls = new Set();
+let candidates = [];
+let activeCandidate = -1;
+let lastResetRevision = null;
+let lastShopJumpSignature = "";
+let loading = false;
+
+document.querySelectorAll(".tab-button").forEach(button => {
+  button.addEventListener("click", () => switchView(button.dataset.view));
+});
+document.getElementById("dungeonSelect").addEventListener("change", loadSelectedMonsters);
+document.getElementById("calcButton").addEventListener("click", calculateByoyon);
+document.getElementById("resetByoyonButton").addEventListener("click", resetByoyon);
+document.getElementById("sizeDownButton").addEventListener("click", () => resizeGrid(-1));
+document.getElementById("sizeUpButton").addEventListener("click", () => resizeGrid(1));
+document.getElementById("markIdentifiedButton").addEventListener("click", () => setSelectedItemIdentified(true));
+document.getElementById("markUnknownButton").addEventListener("click", () => setSelectedItemIdentified(false));
+document.getElementById("showShopCandidatesCheck").addEventListener("change", event => {
+  browserSettings.showShopCandidates = event.target.checked;
+  saveBrowserSettings();
+  renderShopPanel();
+});
+document.getElementById("autoJumpShopCandidateCheck").addEventListener("change", event => {
+  browserSettings.autoJumpShopCandidate = event.target.checked;
+  saveBrowserSettings();
+});
+
+function loadBrowserSettings() {
+  try {
+    return {...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem("siren6BrowserSettings") || "{}")};
+  } catch (_e) {
+    return {...DEFAULT_SETTINGS};
+  }
+}
+
+function saveBrowserSettings() {
+  localStorage.setItem("siren6BrowserSettings", JSON.stringify(browserSettings));
+}
+
+function initSettingsUi() {
+  document.getElementById("showShopCandidatesCheck").checked = browserSettings.showShopCandidates;
+  document.getElementById("autoJumpShopCandidateCheck").checked = browserSettings.autoJumpShopCandidate;
+}
+
+function switchView(viewName) {
+  document.querySelectorAll(".tab-button").forEach(item => {
+    item.classList.toggle("active", item.dataset.view === viewName);
+  });
+  document.querySelectorAll(".view").forEach(item => item.classList.remove("active"));
+  document.getElementById(viewName).classList.add("active");
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {cache: "no-store", ...options});
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) throw new Error(data.error || `${response.status} ${response.statusText}`);
+  return data;
+}
+
+async function loadAll() {
+  if (loading) return;
+  loading = true;
+  try {
+    const [items, dungeons, shop] = await Promise.all([
+      fetchJson("/api/items"),
+      fetchJson("/api/dungeons"),
+      fetchJson("/api/shop-price")
+    ]);
+    itemData = items;
+    dungeonData = dungeons;
+    shopData = shop;
+    syncActiveCategory();
+    renderItems();
+    renderShopPanel();
+    renderDungeonSelect();
+    await loadSelectedMonsters();
+    await syncByoyonReset();
+    maybeAutoJumpShopCandidate();
+    document.getElementById("syncStatus").textContent = `自動更新中 ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    document.getElementById("syncStatus").textContent = `更新失敗: ${e.message}`;
+  } finally {
+    loading = false;
+  }
+}
+
+function syncActiveCategory() {
+  if (!itemData || itemData.categories.some(category => category.key === activeCategory)) return;
+  activeCategory = itemData.categories[0]?.key || "kusa";
+}
+
+function renderItems() {
+  if (!itemData) return;
+  document.getElementById("itemDungeon").textContent = `${itemData.dungeon_name || ""} ${itemData.selected_floor || 1}F以降`;
+  const tabs = document.getElementById("categoryTabs");
+  tabs.innerHTML = "";
+  for (const category of itemData.categories) {
+    const button = document.createElement("button");
+    button.textContent = `${category.label} ${category.identified}/${category.total}`;
+    button.className = category.key === activeCategory ? "active" : "";
+    button.addEventListener("click", () => {
+      activeCategory = category.key;
+      selectedItem = null;
+      renderItems();
+      updateActionBar();
+    });
+    tabs.appendChild(button);
+  }
+
+  const category = itemData.categories.find(item => item.key === activeCategory) || itemData.categories[0];
+  const container = document.getElementById("itemTable");
+  container.innerHTML = "";
+  if (!category) return;
+  if (selectedItem && selectedItem.category === category.key) {
+    const current = category.items.find(row => row.name === selectedItem.name);
+    if (current) {
+      selectedItem.identified = current.identified;
+      selectedItem.can_identify = current.can_identify;
+    }
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "table-wrap";
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  for (const header of category.headers || []) {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  }
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  for (const row of category.items) {
+    const tr = document.createElement("tr");
+    const itemKey = itemKeyOf(row.category, row.name);
+    tr.dataset.itemKey = itemKey;
+    tr.className = [
+      "item-row",
+      row.identified ? "identified" : "",
+      row.price_group_odd ? "odd-price" : "even-price",
+      selectedItem && itemKeyOf(selectedItem.category, selectedItem.name) === itemKey ? "selected" : ""
+    ].join(" ");
+    tr.addEventListener("click", () => selectItem(row));
+    for (const value of row.values) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+  updateActionBar();
+}
+
+function itemKeyOf(category, name) {
+  return `${category}\n${name}`;
+}
+
+function selectItem(row) {
+  selectedItem = {
+    category: row.category,
+    name: row.name,
+    identified: row.identified,
+    can_identify: row.can_identify
+  };
+  renderItems();
+}
+
+function updateActionBar() {
+  const bar = document.getElementById("itemActionBar");
+  if (!selectedItem) {
+    bar.classList.remove("visible");
+    return;
+  }
+  document.getElementById("selectedItemName").textContent = selectedItem.name;
+  document.getElementById("markIdentifiedButton").disabled = !selectedItem.can_identify || selectedItem.identified;
+  document.getElementById("markUnknownButton").disabled = !selectedItem.can_identify || !selectedItem.identified;
+  bar.classList.add("visible");
+}
+
+async function setSelectedItemIdentified(identified) {
+  if (!selectedItem || !selectedItem.can_identify) return;
+  try {
+    const response = await fetchJson("/api/items/identify", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        category: selectedItem.category,
+        name: selectedItem.name,
+        identified
+      })
+    });
+    if (!response.ok) throw new Error(response.error || "更新できませんでした");
+    itemData = response.items;
+    selectedItem.identified = identified;
+    renderItems();
+    document.getElementById("syncStatus").textContent = "識別状態を更新しました";
+  } catch (e) {
+    document.getElementById("syncStatus").textContent = e.message;
+  }
+}
+
+function renderShopPanel() {
+  const panel = document.getElementById("shopPanel");
+  panel.innerHTML = "";
+  panel.classList.toggle("visible", Boolean(browserSettings.showShopCandidates));
+  if (!browserSettings.showShopCandidates || !shopData) return;
+
+  const latest = shopData.latest || {};
+  const candidates = latest.candidates || [];
+  const head = document.createElement("div");
+  head.className = "shop-panel-head";
+  const title = document.createElement("strong");
+  title.textContent = candidates.length
+    ? `価格識別: ${latest.category_label || ""} ${latest.price_label || ""}${latest.price ?? ""}G`
+    : "価格識別候補";
+  head.appendChild(title);
+  const sub = document.createElement("span");
+  sub.className = "muted";
+  sub.textContent = candidates.length ? `${latest.item_text || ""} ${latest.updated_at || ""}` : "候補なし";
+  head.appendChild(sub);
+  panel.appendChild(head);
+
+  const list = document.createElement("div");
+  list.className = "candidate-list";
+  const source = candidates.length
+    ? candidates
+    : (shopData.history || []).flatMap(entry => entry.candidates || []);
+  if (source.length) {
+    source.forEach(candidate => list.appendChild(createCandidateChip(candidate)));
+  } else {
+    const empty = document.createElement("span");
+    empty.className = "muted";
+    empty.textContent = "価格識別候補はまだありません";
+    list.appendChild(empty);
+  }
+  panel.appendChild(list);
+}
+
+function createCandidateChip(candidate) {
+  const chip = document.createElement("button");
+  chip.className = "candidate-chip";
+  chip.textContent = candidate.label || candidate.name;
+  chip.addEventListener("click", () => jumpToItem(candidate.category, candidate.name));
+  return chip;
+}
+
+function maybeAutoJumpShopCandidate() {
+  if (!browserSettings.autoJumpShopCandidate || !shopData) return;
+  const latest = shopData.latest || {};
+  const source = latest.candidates || [];
+  if (!latest.visible || !source.length) return;
+  const signature = [
+    latest.updated_at,
+    latest.item_text,
+    latest.price_kind,
+    latest.price,
+    source.map(candidate => candidate.label).join("|")
+  ].join("\n");
+  if (signature === lastShopJumpSignature) return;
+  lastShopJumpSignature = signature;
+  const first = source[0];
+  jumpToItem(first.category, first.name);
+}
+
+function jumpToItem(category, name) {
+  activeCategory = category;
+  switchView("items");
+  renderItems();
+  requestAnimationFrame(() => {
+    const key = itemKeyOf(category, name);
+    const row = [...document.querySelectorAll("tr[data-item-key]")]
+      .find(candidate => candidate.dataset.itemKey === key);
+    if (row) {
+      row.scrollIntoView({block: "center", inline: "nearest"});
+      row.click();
+    }
+  });
+}
+
+function renderDungeonSelect() {
+  if (!dungeonData) return;
+  const select = document.getElementById("dungeonSelect");
+  select.innerHTML = "";
+  for (const dungeon of dungeonData.dungeons) {
+    const option = document.createElement("option");
+    option.value = dungeon.key;
+    option.textContent = dungeon.name;
+    select.appendChild(option);
+  }
+  select.value = dungeonData.selected_dungeon_key || "";
+}
+
+async function loadSelectedMonsters() {
+  const key = document.getElementById("dungeonSelect").value;
+  if (!key) return;
+  const data = await fetchJson(`/api/monsters/${encodeURIComponent(key)}`);
+  document.getElementById("monsterStartFloor").textContent = `${data.start_floor || 1}F以降`;
+  const container = document.getElementById("monsterFloors");
+  container.innerHTML = "";
+  for (const floor of data.floors) {
+    const block = document.createElement("section");
+    block.className = "monster-floor";
+    const title = document.createElement("h2");
+    title.textContent = floor.floor_label;
+    block.appendChild(title);
+    for (const group of floor.groups) {
+      const row = document.createElement("div");
+      row.className = "monster-group";
+      const label = document.createElement("strong");
+      label.textContent = group.label;
+      row.appendChild(label);
+      const list = document.createElement("div");
+      list.className = "monster-list";
+      for (const monster of group.monsters) {
+        const chip = document.createElement("span");
+        chip.className = "monster";
+        const src = (monster.icon_sources || []).find(value => value.startsWith("data/icons/"));
+        if (src) {
+          const img = document.createElement("img");
+          img.src = `/${src}`;
+          img.alt = "";
+          chip.appendChild(img);
+        }
+        chip.appendChild(document.createTextNode(monster.name));
+        list.appendChild(chip);
+      }
+      if (!group.monsters.length) list.textContent = "-";
+      row.appendChild(list);
+      block.appendChild(row);
+    }
+    container.appendChild(block);
+  }
+}
+
+function keyOf(row, column) {
+  return `${row},${column}`;
+}
+
+function renderGrid(candidate = null) {
+  document.getElementById("gridSizeLabel").textContent = `${gridSize} x ${gridSize}`;
+  document.getElementById("sizeDownButton").disabled = gridSize <= 5;
+  document.getElementById("sizeUpButton").disabled = gridSize >= 40;
+  const grid = document.getElementById("byoyonGrid");
+  grid.style.gridTemplateColumns = `repeat(${gridSize}, 24px)`;
+  grid.innerHTML = "";
+
+  const pathCells = new Set();
+  const reflectionCells = new Map();
+  let startCell = "";
+  let landingCell = "";
+  if (candidate) {
+    startCell = keyOf(candidate.row, candidate.column);
+    const last = [...candidate.path].reverse().find(step => step.row !== null && step.column !== null);
+    if (last) landingCell = keyOf(last.row, last.column);
+    let index = 1;
+    for (const step of candidate.path) {
+      if (step.row !== null && step.column !== null) pathCells.add(keyOf(step.row, step.column));
+    }
+    for (const step of candidate.split_path) {
+      if (step.row !== null && step.column !== null && step.reflection_side) {
+        reflectionCells.set(keyOf(step.row, step.column), String(index++));
+      }
+    }
+  }
+
+  for (let row = 0; row < gridSize; row++) {
+    for (let column = 0; column < gridSize; column++) {
+      const button = document.createElement("button");
+      const key = keyOf(row, column);
+      button.className = "cell";
+      if (walls.has(key)) button.classList.add("wall");
+      else if (key === startCell) {
+        button.classList.add("start");
+        button.textContent = {"右下": "↘", "左下": "↙", "左上": "↖", "右上": "↗"}[candidate.direction] || "";
+      } else if (reflectionCells.has(key)) {
+        button.classList.add("reflect");
+        button.textContent = reflectionCells.get(key);
+      } else if (key === landingCell && key !== startCell) {
+        button.classList.add("landing");
+        button.textContent = "落";
+      } else if (pathCells.has(key)) {
+        button.classList.add("path");
+      }
+      button.addEventListener("click", () => {
+        if (walls.has(key)) walls.delete(key);
+        else walls.add(key);
+        candidates = [];
+        activeCandidate = -1;
+        renderResults("");
+        renderGrid();
+      });
+      grid.appendChild(button);
+    }
+  }
+}
+
+function resizeGrid(delta) {
+  const next = Math.min(40, Math.max(5, gridSize + delta));
+  if (next === gridSize) return;
+  gridSize = next;
+  walls = new Set([...walls].filter(value => {
+    const [row, column] = value.split(",").map(Number);
+    return row < gridSize && column < gridSize;
+  }));
+  candidates = [];
+  activeCandidate = -1;
+  renderResults("");
+  renderGrid();
+}
+
+function resetByoyon() {
+  walls.clear();
+  candidates = [];
+  activeCandidate = -1;
+  renderResults("");
+  renderGrid();
+}
+
+function calculateByoyon() {
+  if (!walls.size) {
+    renderResults("壁を指定してください");
+    renderGrid();
+    return;
+  }
+  const wallPairs = [...walls].map(value => value.split(",").map(Number));
+  candidates = findByoyonCandidates(wallPairs, gridSize);
+  activeCandidate = candidates.length ? 0 : -1;
+  renderResults(candidates.length ? "" : "不可能");
+  renderGrid(candidates[activeCandidate] || null);
+}
+
+function renderResults(message) {
+  document.getElementById("byoyonMessage").textContent = message;
+  const container = document.getElementById("byoyonResults");
+  container.innerHTML = "";
+  candidates.forEach((candidate, index) => {
+    const item = document.createElement("div");
+    item.className = `result-item ${index === activeCandidate ? "active" : ""}`;
+    item.textContent = `${index + 1}: ${candidate.display_text}`;
+    item.addEventListener("click", () => {
+      activeCandidate = index;
+      renderResults("");
+      renderGrid(candidate);
+    });
+    container.appendChild(item);
+  });
+}
+
+async function syncByoyonReset() {
+  try {
+    const data = await fetchJson("/api/byoyon/reset-state");
+    if (lastResetRevision === null) {
+      lastResetRevision = data.revision;
+      return;
+    }
+    if (data.revision !== lastResetRevision) {
+      lastResetRevision = data.revision;
+      resetByoyon();
+    }
+  } catch (_e) {
+  }
+}
+
+function findByoyonCandidates(wallPairs, size) {
+  const normalizedWalls = new Set(wallPairs.map(([row, column]) => keyOf(row, column)));
+  const list = [];
+  for (let row = 0; row < size; row++) {
+    for (let column = 0; column < size; column++) {
+      if (normalizedWalls.has(keyOf(row, column))) continue;
+      for (const [name, vector] of Object.entries(DIRECTIONS)) {
+        const candidate = simulateByoyonRoute(row, column, name, vector, normalizedWalls, size);
+        if (candidate) list.push(candidate);
+      }
+    }
+  }
+  return reduceCandidates(list);
+}
+
+function typeFrom(row, column, wallSet, size) {
+  if (row < 0 || column < 0 || row >= size || column >= size) return "out";
+  return wallSet.has(keyOf(row, column)) ? "wall" : "none";
+}
+
+function simulateByoyonRoute(row, column, directionName, vector, wallSet, size) {
+  const hit = {top: false, bottom: false, left: false, right: false};
+  const reflections = [];
+  const path = [{row, column, direction: vector, reflection_side: ""}];
+  let currentRow = row;
+  let currentColumn = column;
+  let direction = vector;
+  let reflectionCount = 0;
+  let unreflectedCount = 0;
+  let firstReflectionImmediate = null;
+  let splitReflections = null;
+  let splitPath = null;
+
+  while (true) {
+    const [dr, dc] = direction;
+    currentRow += dr;
+    currentColumn += dc;
+    const cellType = typeFrom(currentRow, currentColumn, wallSet, size);
+    if (cellType === "out") {
+      path.push({row: null, column: null, direction, reflection_side: ""});
+      return validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath);
+    }
+    if (cellType === "none") {
+      path.push({row: currentRow, column: currentColumn, direction, reflection_side: ""});
+      unreflectedCount++;
+      if (unreflectedCount >= 10) {
+        return validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath);
+      }
+    } else {
+      if (firstReflectionImmediate === null) firstReflectionImmediate = path.length === 1;
+      if (reflectionCount >= 24) {
+        return validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath);
+      }
+      const hAdj = typeFrom(currentRow, currentColumn - dc, wallSet, size);
+      const vAdj = typeFrom(currentRow - dr, currentColumn, wallSet, size);
+      if (hAdj === "wall" && vAdj === "none") {
+        const side = dr > 0 ? "top" : "bottom";
+        hit[side] = true;
+        reflections.push(side);
+        direction = [-dr, dc];
+        currentRow += direction[0];
+        path.push({row: currentRow, column: currentColumn, direction, reflection_side: side});
+      } else if (hAdj === "none" && vAdj === "wall") {
+        const side = dc > 0 ? "right" : "left";
+        hit[side] = true;
+        reflections.push(side);
+        direction = [dr, -dc];
+        currentColumn += direction[1];
+        path.push({row: currentRow, column: currentColumn, direction, reflection_side: side});
+      } else if (hAdj === "none" && vAdj === "none") {
+        direction = [-dr, -dc];
+        currentRow += direction[0];
+        currentColumn += direction[1];
+      } else {
+        return validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath);
+      }
+      reflectionCount++;
+      unreflectedCount = 1;
+      if (splitReflections === null && canSplit(hit)) {
+        splitReflections = [...reflections];
+        splitPath = [...path];
+      }
+    }
+    if (currentRow === row && currentColumn === column) {
+      return validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath);
+    }
+  }
+}
+
+function canSplit(hit) {
+  return hit.top && hit.bottom && hit.left && hit.right;
+}
+
+function validCandidate(row, column, directionName, reflections, path, hit, firstReflectionImmediate, splitReflections, splitPath) {
+  if (!firstReflectionImmediate || !canSplit(hit)) return null;
+  const display = `${row + 1}行${column + 1}列から${directionName}に投げる (${(splitReflections || reflections).map(side => SIDE_LABELS[side]).join(" -> ")})`;
+  return {
+    row,
+    column,
+    direction: directionName,
+    reflections: splitReflections || [...reflections],
+    path: [...path],
+    split_path: splitPath || [...path],
+    display_text: display
+  };
+}
+
+function samePosition(a, b) {
+  return a.row === b.row && a.column === b.column;
+}
+
+function sameDirection(a, b) {
+  return a.direction[0] === b.direction[0] && a.direction[1] === b.direction[1];
+}
+
+function pathHasPositionAndDirection(path, target) {
+  const reverse = [-target.direction[0], -target.direction[1]];
+  return path.some(step => {
+    return samePosition(step, target) && (
+      sameDirection(step, target) ||
+      (step.direction[0] === reverse[0] && step.direction[1] === reverse[1])
+    );
+  });
+}
+
+function reduceCandidates(all) {
+  const loop = [];
+  const corner = [];
+  const other = [];
+  for (const candidate of all) {
+    const start = candidate.path[0];
+    const end = candidate.path[candidate.path.length - 1];
+    if (samePosition(start, end)) {
+      if (sameDirection(start, end)) loop.push(candidate);
+      else corner.push(candidate);
+    } else {
+      other.push(candidate);
+    }
+  }
+  return [...reduceLoop(loop), ...reduceCorner(corner), ...reduceOther(other)];
+}
+
+function reduceLoop(items) {
+  let remaining = [...items];
+  const reduced = [];
+  while (remaining.length) {
+    const candidate = remaining.shift();
+    reduced.push(candidate);
+    const start = candidate.path[0];
+    remaining = remaining.filter(other => !pathHasPositionAndDirection(other.path, start));
+  }
+  return reduced;
+}
+
+function reduceCorner(items) {
+  let remaining = [...items].sort((a, b) => a.path.length - b.path.length);
+  const reduced = [];
+  while (remaining.length) {
+    const candidate = remaining.shift();
+    reduced.push(candidate);
+    const middle = candidate.path[Math.floor((candidate.path.length - 1) / 2)];
+    remaining = remaining.filter(other => {
+      const otherMiddle = other.path[Math.floor((other.path.length - 1) / 2)];
+      return !(samePosition(middle, otherMiddle) && sameDirection(middle, otherMiddle));
+    });
+  }
+  return reduced;
+}
+
+function reduceOther(items) {
+  let remaining = [...items].sort((a, b) => {
+    const aEnd = a.path[a.path.length - 1];
+    const bEnd = b.path[b.path.length - 1];
+    return Number(aEnd.row === null) - Number(bEnd.row === null) || a.path.length - b.path.length;
+  });
+  const reduced = [];
+  while (remaining.length) {
+    const candidate = remaining.shift();
+    reduced.push(candidate);
+    const end = lastRealStep(candidate.path);
+    remaining = remaining.filter(other => {
+      const otherEnd = lastRealStep(other.path);
+      return !(samePosition(end, otherEnd) && sameDirection(end, otherEnd));
+    });
+  }
+  return reduced;
+}
+
+function lastRealStep(path) {
+  const end = path[path.length - 1];
+  return end.row === null ? path[path.length - 2] : end;
+}
+
+initSettingsUi();
+renderGrid();
+loadAll();
+setInterval(loadAll, 2500);
+</script>
+</body>
+</html>

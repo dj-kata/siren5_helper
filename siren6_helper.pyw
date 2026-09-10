@@ -82,6 +82,8 @@ from src.direct_capture import capture_shiren_window
 startup_trace("imported src.direct_capture")
 from src.fullscreen_capture import capture_shiren_fullscreen
 startup_trace("imported src.fullscreen_capture")
+from src.http_server import BrowserHTTPServer
+startup_trace("imported src.http_server")
 from src.dungeon_ocr import DungeonOcrReader
 from src.dungeon_ocr import normalize_ocr_text
 startup_trace("imported src.dungeon_ocr")
@@ -257,6 +259,7 @@ class MainWindow(MainWindowUI):
 
     capture_processed = Signal(object)
     global_hotkey_pressed = Signal(str)
+    http_action_requested = Signal(object)
 
     def __init__(self):
         self.config = Config()
@@ -311,6 +314,11 @@ class MainWindow(MainWindowUI):
         self.shop_candidate_history = {}
         self.shop_price_visible = False
         self.last_shop_price_visible_time = 0.0
+        self.latest_shop_price_data = {
+            "visible": False,
+            "candidates": [],
+            "updated_at": "",
+        }
         self.capture_worker = None
         self.capture_worker_running = False
         self.capture_worker_lock = threading.Lock()
@@ -318,7 +326,11 @@ class MainWindow(MainWindowUI):
         self.websocket_server = None
         self.websocket_loop = None
         self.websocket_thread = None
+        self.http_server = None
+        self.http_server_config_signature = None
+        self.http_action_requested.connect(self.handle_http_action)
         self.start_websocket_server()
+        self.start_http_server_if_enabled()
         self.init_manpuku_warning_sound()
 
         self.init_ui()
@@ -373,6 +385,34 @@ class MainWindow(MainWindowUI):
             self.websocket_loop.call_soon_threadsafe(self.websocket_loop.stop)
         if self.websocket_thread:
             self.websocket_thread.join(timeout=2.0)
+
+    def http_server_signature(self):
+        return (
+            bool(self.config.http_server_enabled),
+            self.config.http_server_host,
+            int(self.config.http_server_port),
+        )
+
+    def start_http_server_if_enabled(self):
+        self.stop_http_server()
+        self.http_server_config_signature = self.http_server_signature()
+        if not self.config.http_server_enabled:
+            self.update_http_status_label()
+            return
+        self.http_server = BrowserHTTPServer(
+            self,
+            host=self.config.http_server_host or "0.0.0.0",
+            port=self.config.http_server_port,
+        )
+        if not self.http_server.start():
+            self.http_server = None
+            self.statusBar().showMessage("HTTPサーバを起動できませんでした", 5000)
+        self.update_http_status_label()
+
+    def stop_http_server(self):
+        if self.http_server:
+            self.http_server.stop()
+            self.http_server = None
 
     def check_obs_configuration(self):
         if self.config.capture_mode != CAPTURE_MODE_OBS:
@@ -445,6 +485,7 @@ class MainWindow(MainWindowUI):
     def update_all_configs(self, connect_obs: bool = True):
         old_port = self.config.websocket_data_port
         old_capture_mode = self.config.capture_mode
+        old_http_signature = self.http_server_config_signature
         self.config.load_config()
         self.obs_manager.set_config(self.config)
         self.capture_interval = self.config.obs_capture_interval_seconds
@@ -463,6 +504,11 @@ class MainWindow(MainWindowUI):
             self.start_websocket_server()
             self.broadcast_monster_floor_state()
 
+        if old_http_signature != self.http_server_signature():
+            self.start_http_server_if_enabled()
+        else:
+            self.update_http_status_label()
+
         if self.config.capture_mode != CAPTURE_MODE_OBS:
             if self.obs_manager.is_connected or old_capture_mode == CAPTURE_MODE_OBS:
                 self.obs_manager.disconnect()
@@ -472,6 +518,178 @@ class MainWindow(MainWindowUI):
 
         if connect_obs and not self.obs_manager.is_connected:
             self.obs_manager.connect()
+
+    def get_http_items_data(self):
+        categories = []
+        counts = self.get_item_stats()
+        for category in ITEM_CATEGORIES:
+            target = self.get_target_items(category)
+            previous_buy = target[0].buy if target else None
+            is_odd_price_group = False
+            items = []
+            for item in target:
+                if item.buy != previous_buy:
+                    previous_buy = item.buy
+                    is_odd_price_group = not is_odd_price_group
+                items.append({
+                    "name": item.name,
+                    "category": category,
+                    "identified": bool(item.get or item.default_get),
+                    "default_identified": bool(item.default_get),
+                    "can_identify": category not in ("buki", "tate") and not item.default_get,
+                    "demerit": bool(item.demerit),
+                    "buy": item.buy,
+                    "sell": item.sell,
+                    "price_group_odd": is_odd_price_group,
+                    "values": [
+                        self.to_single_line(value)
+                        for value in self.itemlist.get_table_values(category, item)
+                    ],
+                })
+            identified, total = counts.get(category, (0, 0))
+            categories.append({
+                "key": category,
+                "label": ITEM_CATEGORY_LABELS.get(category, category),
+                "headers": self.itemlist.get_table_headers(category),
+                "identified": identified,
+                "total": total,
+                "items": items,
+            })
+
+        dungeon = self.current_dungeon()
+        return {
+            "dungeon_key": dungeon.get("key", "") if dungeon else "",
+            "dungeon_name": dungeon.get("name", "") if dungeon else "",
+            "selected_floor": self.current_monster_floor(),
+            "revision": self.item_identification_revision,
+            "categories": categories,
+        }
+
+    def get_http_dungeons_data(self):
+        return {
+            "selected_dungeon_key": self.selected_dungeon_key,
+            "selected_floor": self.current_monster_floor(),
+            "dungeons": [
+                {
+                    "key": dungeon.get("key", ""),
+                    "name": dungeon.get("name", ""),
+                    "floor_count": len(dungeon.get("monster_floors", [])),
+                }
+                for dungeon in self.dungeons
+            ],
+        }
+
+    def get_http_monsters_data(self, dungeon_key):
+        dungeon = next(
+            (item for item in self.dungeons if item.get("key") == dungeon_key),
+            None,
+        )
+        if dungeon is None:
+            return {"dungeon_key": dungeon_key, "dungeon_name": "", "start_floor": 1, "floors": []}
+        start_floor = self.current_monster_floor() if dungeon.get("key") == self.selected_dungeon_key else 1
+        floors = []
+        for floor in dungeon.get("monster_floors", []):
+            floor_number = floor.get("floor")
+            if isinstance(floor_number, int) and floor_number < start_floor:
+                continue
+            floors.append(self.monster_floor_payload_part(floor, floor_number))
+        return {
+            "dungeon_key": dungeon.get("key", ""),
+            "dungeon_name": dungeon.get("name", ""),
+            "start_floor": start_floor,
+            "floors": floors,
+        }
+
+    def get_http_byoyon_reset_state(self):
+        return {
+            "revision": self.item_identification_revision,
+            "grid_size": self.byoyon_table.rowCount() if self.byoyon_table else GRID_SIZE,
+        }
+
+    def get_http_shop_price_data(self):
+        return {
+            "latest": dict(self.latest_shop_price_data),
+            "history": self.http_shop_candidate_history_payload(),
+            "revision": self.item_identification_revision,
+        }
+
+    def http_shop_candidate_history_payload(self):
+        rows = []
+        for entry in self.shop_candidate_history.values():
+            visible_candidates = [
+                candidate
+                for candidate in entry["candidates"]
+                if not candidate[0].get and not candidate[0].default_get
+            ]
+            visible_candidates = self.sort_shop_price_candidates(visible_candidates)
+            if not visible_candidates:
+                continue
+            rows.append({
+                "display_name": entry["display_name"],
+                "category": entry["category"],
+                "category_label": ITEM_CATEGORY_LABELS.get(entry["category"], entry["category"]),
+                "candidates": [self.shop_candidate_payload(candidate) for candidate in visible_candidates],
+            })
+        return rows
+
+    def set_http_item_identified(self, payload):
+        action = {
+            "type": "set_item_identified",
+            "payload": payload,
+            "event": threading.Event(),
+            "response": None,
+        }
+        self.http_action_requested.emit(action)
+        if not action["event"].wait(timeout=3.0):
+            return {"ok": False, "error": "timeout"}
+        return action["response"] or {"ok": False, "error": "no response"}
+
+    def handle_http_action(self, action):
+        try:
+            if action.get("type") == "set_item_identified":
+                action["response"] = self.apply_http_item_identified(action.get("payload") or {})
+            else:
+                action["response"] = {"ok": False, "error": "unknown action"}
+        except Exception as e:
+            logger.error(f"HTTP操作エラー: {e}\n{traceback.format_exc()}")
+            action["response"] = {"ok": False, "error": str(e)}
+        finally:
+            event = action.get("event")
+            if event:
+                event.set()
+
+    def apply_http_item_identified(self, payload):
+        category = str(payload.get("category", ""))
+        name = str(payload.get("name", ""))
+        identified = bool(payload.get("identified", False))
+        if category not in ITEM_CATEGORIES:
+            return {"ok": False, "error": "invalid category"}
+        if category in ("buki", "tate"):
+            return {"ok": False, "error": "武器・盾は識別状態の変更対象外です"}
+
+        target = self.get_target_items(category)
+        item = next((candidate for candidate in target if candidate.name == name), None)
+        if item is None:
+            return {"ok": False, "error": "item not found"}
+        if item.default_get:
+            return {"ok": False, "error": f"{item.name} は常に識別済みです"}
+
+        changed = item.get != identified
+        item.get = identified
+        if changed:
+            self.touch_item_identification_state()
+        self.update_item_tables()
+        self.select_items_in_table(category, [item])
+        status = "識別済" if identified else "未識別"
+        self.statusBar().showMessage(f"HTTP: {item.name} を{status}にしました", 3000)
+        return {
+            "ok": True,
+            "changed": changed,
+            "category": category,
+            "name": item.name,
+            "identified": bool(item.get),
+            "items": self.get_http_items_data(),
+        }
 
     def connect_obs_after_dialog(self):
         """OBS設定ダイアログを閉じた後にOBSへ接続する"""
@@ -2736,8 +2954,6 @@ class MainWindow(MainWindowUI):
         }
 
     def broadcast_shop_price_state(self, result, category, candidates, exact_item=None):
-        if not self.websocket_server:
-            return
         if not candidates:
             self.hide_shop_price_state()
             return
@@ -2753,7 +2969,7 @@ class MainWindow(MainWindowUI):
         category_label = ITEM_CATEGORY_LABELS.get(category, category or "判定不可")
         self.shop_price_visible = True
         self.last_shop_price_visible_time = time.monotonic()
-        self.websocket_server.update_shop_price_data({
+        payload = {
             "visible": True,
             "item_text": result.item_text,
             "price": result.price,
@@ -2765,7 +2981,10 @@ class MainWindow(MainWindowUI):
             "raw_texts": list(result.raw_texts),
             "candidates": [self.shop_candidate_payload(candidate) for candidate in candidates],
             "updated_at": datetime.datetime.now().strftime("%H:%M:%S"),
-        })
+        }
+        self.latest_shop_price_data = payload
+        if self.websocket_server:
+            self.websocket_server.update_shop_price_data(payload)
 
     def hide_shop_price_state_if_stale(self):
         if not self.shop_price_visible:
@@ -2776,15 +2995,24 @@ class MainWindow(MainWindowUI):
 
     def hide_shop_price_state(self):
         self.last_shop_status_message = ""
-        if not self.websocket_server or not self.shop_price_visible:
+        if not self.shop_price_visible:
             return
         self.shop_price_visible = False
         self.last_shop_result_signature = None
-        self.websocket_server.update_shop_price_data({
+        payload = {
             "visible": False,
             "candidates": [],
             "updated_at": datetime.datetime.now().strftime("%H:%M:%S"),
-        })
+        }
+        if self.latest_shop_price_data.get("candidates"):
+            self.latest_shop_price_data = {
+                **self.latest_shop_price_data,
+                "visible": False,
+            }
+        else:
+            self.latest_shop_price_data = payload
+        if self.websocket_server:
+            self.websocket_server.update_shop_price_data(payload)
 
     def select_items_in_table(self, category, items):
         current_tab_label = ""
@@ -2907,6 +3135,7 @@ class MainWindow(MainWindowUI):
         self.save_identification_settings()
         self.save_window_geometry()
 
+        self.stop_http_server()
         self.stop_websocket_server()
 
         logger.info("アプリケーション終了")

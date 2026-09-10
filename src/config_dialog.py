@@ -34,6 +34,7 @@ from src.config import (
 )
 from src.funcs import load_ui_text
 from src.logger import get_logger, set_debug_logging_enabled
+from src.network_info import get_local_ipv4_interfaces
 
 logger = get_logger(__name__)
 
@@ -85,6 +86,16 @@ class ConfigDialog(QDialog):
         self.websocket_data_port_edit = QLineEdit()
         self.websocket_data_port_edit.setValidator(QIntValidator(1000, 65535))
         form.addRow(self.ui.feature.websocket_port, self.websocket_data_port_edit)
+
+        self.http_server_enabled_check = QCheckBox(self.ui.feature.http_server_enabled)
+        form.addRow(self.http_server_enabled_check)
+
+        self.http_server_port_edit = QLineEdit()
+        self.http_server_port_edit.setValidator(QIntValidator(1000, 65535))
+        form.addRow(self.ui.feature.http_server_port, self.http_server_port_edit)
+
+        self.http_server_interface_combo = QComboBox()
+        form.addRow(self.ui.feature.http_server_interface, self.http_server_interface_combo)
 
         self.keep_on_top_check = QCheckBox(self.ui.feature.keep_on_top)
         form.addRow(self.keep_on_top_check)
@@ -162,6 +173,9 @@ class ConfigDialog(QDialog):
     def load_config_values(self):
         self.image_save_path_edit.setText(self.config.image_save_path)
         self.websocket_data_port_edit.setText(str(self.config.websocket_data_port))
+        self.http_server_enabled_check.setChecked(bool(self.config.http_server_enabled))
+        self.http_server_port_edit.setText(str(self.config.http_server_port))
+        self.load_http_server_interfaces()
         index = self.capture_mode_combo.findData(self.config.capture_mode)
         self.capture_mode_combo.setCurrentIndex(index if index >= 0 else 0)
         self.obs_capture_interval_spin.setValue(self.config.obs_capture_interval_seconds)
@@ -185,6 +199,15 @@ class ConfigDialog(QDialog):
         except ValueError:
             logger.warning("ポート番号の変換に失敗しました。既存値を使用します")
 
+        self.config.http_server_enabled = self.http_server_enabled_check.isChecked()
+        try:
+            port = int(self.http_server_port_edit.text())
+            if 1000 <= port <= 65535:
+                self.config.http_server_port = port
+        except ValueError:
+            logger.warning("HTTPポート番号の変換に失敗しました。既存値を使用します")
+        self.config.http_server_interface = self.http_server_interface_combo.currentData() or ""
+
         self.config.capture_mode = self.capture_mode_combo.currentData() or CAPTURE_MODE_NONE
         self.config.obs_enabled = self.config.capture_mode == CAPTURE_MODE_OBS
         self.config.obs_capture_interval_seconds = self.obs_capture_interval_spin.value()
@@ -201,3 +224,22 @@ class ConfigDialog(QDialog):
         self.config.save_config()
         logger.info("設定を保存しました")
         super().accept()
+
+    def load_http_server_interfaces(self):
+        selected = self.config.http_server_interface
+        combo = self.http_server_interface_combo
+        combo.clear()
+        combo.addItem(self.ui.feature.http_server_interface_auto, "")
+        found = False
+        for interface in get_local_ipv4_interfaces():
+            label = f"{interface.name} ({interface.address})"
+            combo.addItem(label, interface.name)
+            if interface.name == selected:
+                found = True
+        if selected and not found:
+            combo.addItem(
+                f"{selected} ({self.ui.feature.http_server_interface_missing})",
+                selected,
+            )
+        index = combo.findData(selected)
+        combo.setCurrentIndex(index if index >= 0 else 0)

@@ -76,6 +76,12 @@ class Config:
         # WebSocketデータ配信
         self.websocket_data_port = 8767
 
+        # HTTPブラウザ表示
+        self.http_server_enabled = False
+        self.http_server_host = "0.0.0.0"
+        self.http_server_port = 8787
+        self.http_server_interface = ""
+
         # UI
         self.language = "ja"
         self.debug_mode = False
@@ -138,6 +144,19 @@ class Config:
             self.capture_resolution = capture_resolution
             self.image_save_path = config_data.get("image_save_path", self.image_save_path)
             self.websocket_data_port = config_data.get("websocket_data_port", self.websocket_data_port)
+            self.http_server_enabled = bool(
+                config_data.get("http_server_enabled", self.http_server_enabled)
+            )
+            self.http_server_host = config_data.get("http_server_host", self.http_server_host)
+            self.http_server_port = clamp_int(
+                config_data.get("http_server_port", self.http_server_port),
+                self.http_server_port,
+                1000,
+                65535,
+            )
+            self.http_server_interface = config_data.get(
+                "http_server_interface", self.http_server_interface
+            )
             self.language = config_data.get("language", self.language)
             self.debug_mode = bool(config_data.get("debug_mode", self.debug_mode))
             self.dungeon_ocr_enabled = bool(
@@ -197,6 +216,10 @@ class Config:
             "capture_resolution": self.capture_resolution,
             "image_save_path": self.image_save_path,
             "websocket_data_port": self.websocket_data_port,
+            "http_server_enabled": self.http_server_enabled,
+            "http_server_host": self.http_server_host,
+            "http_server_port": self.http_server_port,
+            "http_server_interface": self.http_server_interface,
             "language": self.language,
             "debug_mode": self.debug_mode,
             "dungeon_ocr_enabled": self.dungeon_ocr_enabled,
@@ -234,6 +257,9 @@ class Config:
                 "obs_scene_collection": self.obs_scene_collection,
                 "image_save_path": self.image_save_path,
                 "websocket_data_port": self.websocket_data_port,
+                "http_server_enabled": self.http_server_enabled,
+                "http_server_port": self.http_server_port,
+                "http_server_interface": self.http_server_interface,
                 "language": self.language,
                 "debug_mode": self.debug_mode,
                 "dungeon_ocr_enabled": self.dungeon_ocr_enabled,
