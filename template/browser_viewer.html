@@ -223,52 +223,40 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
 }
 .capture-layout {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) 1fr;
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
 }
 .capture-list {
-  max-height: calc(100vh - 150px);
-  overflow: auto;
-  border: 1px solid var(--line);
-  background: var(--panel);
+  display: contents;
 }
 .capture-item {
-  width: 100%;
-  display: block;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  padding: 8px 10px;
-  text-align: left;
+  display: grid;
+  grid-template-rows: 130px auto;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
   background: #fff;
+  color: var(--text);
+  text-decoration: none;
 }
-.capture-item.active {
-  background: var(--accent-soft);
+.capture-thumb {
+  width: 100%;
+  height: 130px;
+  background: #eef3f8;
+  object-fit: contain;
+  border: 1px solid var(--line);
 }
 .capture-name {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .capture-meta {
   display: block;
   color: var(--muted);
   font-size: 12px;
-}
-.capture-preview {
-  min-height: 280px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-}
-.capture-preview img {
-  display: block;
-  max-width: 100%;
-  height: auto;
 }
 .byoyon-layout {
   display: grid;
@@ -333,7 +321,7 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
 }
 @media (max-width: 760px) {
   main { padding: 10px 10px 78px; }
-  .capture-layout { grid-template-columns: 1fr; }
+  .capture-layout { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .byoyon-layout { grid-template-columns: 1fr; }
   th { top: 0; }
   .monster-group { grid-template-columns: 1fr; }
@@ -401,9 +389,6 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
     </div>
     <div class="capture-layout">
       <div id="captureList" class="capture-list"></div>
-      <div id="capturePreview" class="capture-preview">
-        <span class="muted">画像を選択してください</span>
-      </div>
     </div>
   </section>
 
@@ -439,7 +424,6 @@ let itemData = null;
 let dungeonData = null;
 let shopData = null;
 let captureData = null;
-let selectedCapture = "";
 let activeCategory = "kusa";
 let selectedItem = null;
 let gridSize = 25;
@@ -735,12 +719,6 @@ function renderCaptures() {
   if (!captureData) return;
   const files = captureData.files || [];
   document.getElementById("captureDirectory").textContent = captureData.directory || "";
-  if (selectedCapture && !files.some(file => file.filename === selectedCapture)) {
-    selectedCapture = "";
-  }
-  if (!selectedCapture && files.length) {
-    selectedCapture = files[0].filename;
-  }
 
   const list = document.getElementById("captureList");
   list.innerHTML = "";
@@ -751,38 +729,30 @@ function renderCaptures() {
     list.appendChild(empty);
   } else {
     for (const file of files) {
-      const button = document.createElement("button");
-      button.className = `capture-item ${file.filename === selectedCapture ? "active" : ""}`;
-      button.addEventListener("click", () => {
-        selectedCapture = file.filename;
-        renderCaptures();
-      });
+      const url = `${file.url}?mtime=${encodeURIComponent(file.mtime)}`;
+      const link = document.createElement("a");
+      link.className = "capture-item";
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      const image = document.createElement("img");
+      image.className = "capture-thumb";
+      image.src = url;
+      image.alt = file.filename;
       const name = document.createElement("span");
       name.className = "capture-name";
       name.textContent = file.filename;
       const meta = document.createElement("span");
       meta.className = "capture-meta";
       meta.textContent = `${file.mtime_text} / ${formatBytes(file.size)}`;
-      button.appendChild(name);
-      button.appendChild(meta);
-      list.appendChild(button);
+      const text = document.createElement("span");
+      text.appendChild(name);
+      text.appendChild(meta);
+      link.appendChild(image);
+      link.appendChild(text);
+      list.appendChild(link);
     }
   }
-
-  const preview = document.getElementById("capturePreview");
-  preview.innerHTML = "";
-  const selected = files.find(file => file.filename === selectedCapture);
-  if (!selected) {
-    const text = document.createElement("span");
-    text.className = "muted";
-    text.textContent = "画像を選択してください";
-    preview.appendChild(text);
-    return;
-  }
-  const image = document.createElement("img");
-  image.src = `${selected.url}?mtime=${encodeURIComponent(selected.mtime)}`;
-  image.alt = selected.filename;
-  preview.appendChild(image);
 }
 
 function formatBytes(value) {
