@@ -9,3 +9,5 @@ out/*
 captures/*
 .venv/*
 src/*.egg-info/*
+*.json
+*.xml
