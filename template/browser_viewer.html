@@ -221,6 +221,55 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
   height: 24px;
   object-fit: contain;
 }
+.capture-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.capture-list {
+  max-height: calc(100vh - 150px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.capture-item {
+  width: 100%;
+  display: block;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 8px 10px;
+  text-align: left;
+  background: #fff;
+}
+.capture-item.active {
+  background: var(--accent-soft);
+}
+.capture-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.capture-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.capture-preview {
+  min-height: 280px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+.capture-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
 .byoyon-layout {
   display: grid;
   grid-template-columns: minmax(300px, max-content) 1fr;
@@ -284,6 +333,7 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
 }
 @media (max-width: 760px) {
   main { padding: 10px 10px 78px; }
+  .capture-layout { grid-template-columns: 1fr; }
   .byoyon-layout { grid-template-columns: 1fr; }
   th { top: 0; }
   .monster-group { grid-template-columns: 1fr; }
@@ -296,6 +346,7 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
     <div class="brand">Siren 6 Helper</div>
     <button class="tab-button active" data-view="items">アイテム識別</button>
     <button class="tab-button" data-view="monsters">モンスター</button>
+    <button class="tab-button" data-view="captures">保存画像</button>
     <button class="tab-button" data-view="byoyon">ボヨヨン壁</button>
     <button class="tab-button" data-view="settings">設定</button>
     <span id="syncStatus" class="status-text">自動更新中</span>
@@ -343,6 +394,19 @@ tr.even-price:not(.identified) td { background: #fffbe6; }
     </div>
   </section>
 
+  <section id="captures" class="view">
+    <div class="section-head">
+      <h1>保存画像</h1>
+      <span id="captureDirectory" class="muted"></span>
+    </div>
+    <div class="capture-layout">
+      <div id="captureList" class="capture-list"></div>
+      <div id="capturePreview" class="capture-preview">
+        <span class="muted">画像を選択してください</span>
+      </div>
+    </div>
+  </section>
+
   <section id="settings" class="view">
     <div class="section-head">
       <h1>ブラウザ設定</h1>
@@ -374,6 +438,8 @@ let browserSettings = loadBrowserSettings();
 let itemData = null;
 let dungeonData = null;
 let shopData = null;
+let captureData = null;
+let selectedCapture = "";
 let activeCategory = "kusa";
 let selectedItem = null;
 let gridSize = 25;
@@ -441,17 +507,20 @@ async function loadAll() {
   if (loading) return;
   loading = true;
   try {
-    const [items, dungeons, shop] = await Promise.all([
+    const [items, dungeons, shop, captures] = await Promise.all([
       fetchJson("/api/items"),
       fetchJson("/api/dungeons"),
-      fetchJson("/api/shop-price")
+      fetchJson("/api/shop-price"),
+      fetchJson("/api/captures")
     ]);
     itemData = items;
     dungeonData = dungeons;
     shopData = shop;
+    captureData = captures;
     syncActiveCategory();
     renderItems();
     renderShopPanel();
+    renderCaptures();
     renderDungeonSelect();
     await loadSelectedMonsters();
     await syncByoyonReset();
@@ -660,6 +729,67 @@ function jumpToItem(category, name) {
       row.click();
     }
   });
+}
+
+function renderCaptures() {
+  if (!captureData) return;
+  const files = captureData.files || [];
+  document.getElementById("captureDirectory").textContent = captureData.directory || "";
+  if (selectedCapture && !files.some(file => file.filename === selectedCapture)) {
+    selectedCapture = "";
+  }
+  if (!selectedCapture && files.length) {
+    selectedCapture = files[0].filename;
+  }
+
+  const list = document.getElementById("captureList");
+  list.innerHTML = "";
+  if (!files.length) {
+    const empty = document.createElement("div");
+    empty.className = "capture-item";
+    empty.textContent = "保存画像はまだありません";
+    list.appendChild(empty);
+  } else {
+    for (const file of files) {
+      const button = document.createElement("button");
+      button.className = `capture-item ${file.filename === selectedCapture ? "active" : ""}`;
+      button.addEventListener("click", () => {
+        selectedCapture = file.filename;
+        renderCaptures();
+      });
+      const name = document.createElement("span");
+      name.className = "capture-name";
+      name.textContent = file.filename;
+      const meta = document.createElement("span");
+      meta.className = "capture-meta";
+      meta.textContent = `${file.mtime_text} / ${formatBytes(file.size)}`;
+      button.appendChild(name);
+      button.appendChild(meta);
+      list.appendChild(button);
+    }
+  }
+
+  const preview = document.getElementById("capturePreview");
+  preview.innerHTML = "";
+  const selected = files.find(file => file.filename === selectedCapture);
+  if (!selected) {
+    const text = document.createElement("span");
+    text.className = "muted";
+    text.textContent = "画像を選択してください";
+    preview.appendChild(text);
+    return;
+  }
+  const image = document.createElement("img");
+  image.src = `${selected.url}?mtime=${encodeURIComponent(selected.mtime)}`;
+  image.alt = selected.filename;
+  preview.appendChild(image);
+}
+
+function formatBytes(value) {
+  if (!Number.isFinite(value)) return "";
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function renderDungeonSelect() {

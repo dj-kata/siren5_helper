@@ -108,6 +108,15 @@ class BrowserHTTPServer:
                         self._send_json(provider.get_http_byoyon_reset_state())
                     elif path == "/api/shop-price":
                         self._send_json(provider.get_http_shop_price_data())
+                    elif path == "/api/captures":
+                        self._send_json(provider.get_http_capture_images_data())
+                    elif path.startswith("/api/captures/files/"):
+                        filename = path.removeprefix("/api/captures/files/")
+                        image_path = provider.get_http_capture_image_path(filename)
+                        if image_path is None:
+                            self._send_error(HTTPStatus.NOT_FOUND, "image not found")
+                        else:
+                            self._send_file(image_path)
                     elif path.startswith("/data/icons/"):
                         filename = path.removeprefix("/data/icons/")
                         if "/" in filename or "\\" in filename or filename in ("", ".", ".."):

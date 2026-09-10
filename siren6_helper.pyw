@@ -16,6 +16,7 @@ import time
 from difflib import SequenceMatcher
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import quote
 
 
 def is_debug_mode_enabled_from_config():
@@ -179,6 +180,7 @@ DISABLED_DUNGEON_KEYS = {"chinmoku_shinzui"}
 MONSTER_FLOOR_DUNGEON_KEYS = {"toguro_shinzui", "cho_shinzui"}
 INVALID_ICON_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]+')
 ICON_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+CAPTURE_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
 MONSTER_ICON_FILENAME_MAP_PATH = Path("data/monster_icon_filenames.json")
 MONSTER_TABLE_FLOOR_COLUMN_WIDTH = 60
 MONSTER_TABLE_TEXT_COLUMN_WIDTH = 140
@@ -612,6 +614,47 @@ class MainWindow(MainWindowUI):
             "history": self.http_shop_candidate_history_payload(),
             "revision": self.item_identification_revision,
         }
+
+    def get_http_capture_images_data(self):
+        capture_dir = Path(self.config.image_save_path).expanduser()
+        files = []
+        try:
+            if capture_dir.exists() and capture_dir.is_dir():
+                for path in capture_dir.iterdir():
+                    if not path.is_file() or path.suffix.lower() not in CAPTURE_IMAGE_EXTENSIONS:
+                        continue
+                    stat = path.stat()
+                    files.append({
+                        "filename": path.name,
+                        "size": stat.st_size,
+                        "mtime": stat.st_mtime,
+                        "mtime_text": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                        "url": f"/api/captures/files/{quote(path.name)}",
+                    })
+        except Exception as e:
+            logger.warning(f"保存画像一覧の取得に失敗しました: {capture_dir} {e}")
+
+        files.sort(key=lambda item: item["mtime"], reverse=True)
+        return {
+            "directory": str(capture_dir),
+            "files": files,
+        }
+
+    def get_http_capture_image_path(self, filename):
+        if not filename or "/" in filename or "\\" in filename or filename in (".", ".."):
+            return None
+        capture_dir = Path(self.config.image_save_path).expanduser()
+        path = capture_dir / filename
+        try:
+            resolved_dir = capture_dir.resolve()
+            resolved_path = path.resolve()
+            if resolved_path.parent != resolved_dir:
+                return None
+            if not resolved_path.is_file() or resolved_path.suffix.lower() not in CAPTURE_IMAGE_EXTENSIONS:
+                return None
+            return resolved_path
+        except Exception:
+            return None
 
     def http_shop_candidate_history_payload(self):
         rows = []
